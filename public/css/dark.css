@@ -1,0 +1,49 @@
+body { transition: background 0.25s; }
+
+@media (prefers-color-scheme: dark) {
+    body, .full-page-container {
+        background: black;
+        color: #cccccc;
+    }
+
+    .form-control:disabled, .form-control[readonly] { background: #050505; }
+    .form-control-plaintext { color: #bbbbbb; }
+    .form-control, .form-control:focus {
+        background: #111111;
+        color: #aaaaaa;
+        border-color: #222222;
+    }
+
+    .dropdown-menu { background: #222222; }
+    .dropdown-item { color: #cccccc; }
+    .dropdown-item:hover {
+        background: #151515;
+        color: #cccccc;
+    }
+    
+    .text-dark { color: #bbbbbb!important; }
+    a.text-dark:focus, a.text-dark:hover { color: #aaaaaa!important; }
+    
+    .btn-light { background: #bbbbbb; }
+    .btn-light:hover { background: #aaaaaa; }
+    .btn-outline-dark { color: #bbbbbb }
+    .btn-outline-dark.disabled, .btn-outline-dark:disabled { color: #aaaaaa }
+
+    .modal-content { background: #333333; }
+
+    .close {
+        color: #cccccc;
+        text-shadow: none;
+    }
+    .close:hover { color: #bbbbbb; }
+
+    .input-group-text {
+        background: #222222;
+        border-color: #222222;
+        color: #999999;
+    }
+
+    .card {
+      background-color: #111111;
+    }
+}

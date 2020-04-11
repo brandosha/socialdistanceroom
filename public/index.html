@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Web RTC</title>
+
+    <!-- update the version number as needed -->
+    <script defer src="/__/firebase/7.13.2/firebase-app.js"></script>
+    <!-- include only the Firebase features as you need -->
+    <script defer src="/__/firebase/7.13.2/firebase-firestore.js"></script>
+    <script defer src="/__/firebase/7.13.2/firebase-database.js"></script>
+    <!-- initialize the SDK after all desired features are loaded -->
+    <script defer src="/__/firebase/init.js"></script>
+
+    <script defer src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/8.0.13/jsrsasign-all-min.js"></script>
+
+    <script defer src="/js/utils.js"></script>
+    <script defer src="/js/FirestoreSignaling.js"></script>
+    <script defer src="/js/script.js"></script>
+    
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="/css/loader.css" >
+    <link rel="stylesheet" href="/css/dark.css">
+  </head>
+
+  <body>
+    <div id="app" class="container py-3">
+      <form @submit.prevent="connect">
+        <div class="row">
+          <div class="form-group col-12 col-md">
+            <div class="row align-items-center">
+              <label for="room-id" class="col-4 col-md-auto mb-0 pl-3">
+                Room ID
+              </label>
+              <input v-model="roomId" id="room-id" class="form-control col mr-3" :readonly="ready">
+            </div>
+          </div>
+        
+          <div class="form-group col-12 col-md">
+            <div class="row align-items-center">
+              <label for="user-id" class="col-4 col-md-auto mb-0 pl-3">
+                User ID
+              </label>
+              <input v-model="userId" id="user-id" class="form-control col mr-3" :readonly="ready">
+            </div>
+          </div>
+
+          <div class="form-group col-12 col-md-auto">
+            <button class="btn btn-primary" :disabled="connecting || ready || !roomId || !validUserId">
+              Connect
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div v-if="ready" class="fixed-bottom container-fluid bg-dark">
+        <div class="row py-2">
+          <div class="col text-center">
+            <button @click="toggleMute" class="btn btn-primary">
+              {{ muted ? 'Muted': 'Mute' }}
+            </button>
+          </div>
+          <div class="col text-center">
+            <button @click="toggleHide" class="btn btn-primary">
+              {{ hidden ? 'Hidden' : 'Hide' }}
+            </button>
+          </div>
+          <div class="col text-center">
+            <button @click="disconnect" class="btn btn-danger">
+              {{ host ? 'End' : 'Leave' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="ready" class="form-row mt-2 justify-content-around" style="margin-bottom: 2.5em;">
+        <div class="col-12 mt-2" :class="[widthClasses, (host || peers.length > 0) ? 'd-block' : 'd-none']">
+          <div class="position-absolute text-light rounded m-1 px-1" style="background-color: rgba(0,0,0,0.5)">
+            {{ userId }}
+            <span v-if="muted">(muted)</span>
+            <span v-if="hidden">(hidden)</span>
+          </div>
+          <video id="output-video-preview" class="mw-100" style="max-height: 75vh;" autoplay playsinline muted></video>
+        </div>
+        <div v-for="peer in peers" class="col-12 mt-2" :class="widthClasses">
+          <div class="position-absolute text-light rounded m-1 px-1" style="background-color: rgba(0,0,0,0.5)">
+            {{ peer.name }}
+            <span v-if="peer.muted">(muted)</span>
+            <span v-if="peer.hidden">(hidden)</span>
+          </div>
+          <video :id="'video-' + peer.name" class="mw-100" style="max-height: 75vh;" autoplay playsinline></video>
+        </div>
+      </div>
+    <div id="loader" class="full-page-container">
+      <div class="loader-container">
+        <div class="d5"></div>
+        <div class="d4"></div>
+        <div class="d3"></div>
+        <div class="d2"></div>
+        <div class="d1"></div>
+      </div>
+    </div>
+  </body>
+</html>
