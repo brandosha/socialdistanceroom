@@ -305,16 +305,16 @@ class FirestoreSignaling {
 
   async end() {
     if (this.owner) {
-      this._cancelPeerListener()
-      await this._presenceRoomRef.onDisconnect().cancel()
-      await this._presenceRoomRef.remove()
       Object.keys(this._peers).forEach(id => {
         this._peers[id].connection.close()
         delete this._peers[id]
       })
+      this._cancelPeerListener()
+      await this._presenceRoomRef.onDisconnect().cancel()
+      await this._presenceRoomRef.remove()
     } else {
-      this._presenceRoomRef.off()
       this._peer.connection.close()
+      this._presenceRoomRef.off()
     }
   }
 }

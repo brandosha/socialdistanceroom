@@ -8,6 +8,8 @@
 var peerConnections = { }
 
 function createPeer(peerName, incoming) {
+  const safeId = btoa(peerName).split('=', 2)[0]
+
   const peer = new RTCPeerConnection({
     iceServers: [{ 'urls': ['stun:stun.l.google.com:19302'] }],
     offerToReceiveAudio: true,
@@ -55,7 +57,7 @@ function createPeer(peerName, incoming) {
 
   peer.ontrack = e => {
     const stream = e.streams[0]
-    const videoEl = $('#video-' + peerName)[0]
+    const videoEl = $('#video-' + safeId)[0]
     console.log(videoEl, peerName)
     if (stream && videoEl.srcObject !== stream) {
       peerConnections[peerName].stream = stream
@@ -65,6 +67,7 @@ function createPeer(peerName, incoming) {
 
   app.peers.push({
     name: peerName,
+    safeId: safeId,
     muted: false,
     hidden: false
   })
@@ -100,7 +103,7 @@ var videoStream
 var app = new Vue({
   el: '#app',
   data: {
-    roomId: localStorage.getItem('room_id') || '',
+    roomId: decodeURIComponent(location.pathname.slice(1)) || '',
     userId: localStorage.getItem('user_id') || '',
     connecting: false,
     ready: false,
@@ -138,7 +141,7 @@ var app = new Vue({
         if (confirm('The room "' + roomId + '" doesn\'t exist. Would you like to create it?')) {
           return true
         }
-        this.ready = false
+        this.disconnect()
         return false
       }
 
@@ -146,11 +149,13 @@ var app = new Vue({
       signaling.onready = () => {
         this.ready = true
         this.$nextTick(() => { $('#output-video-preview')[0].srcObject = videoStream })
+
+        history.replaceState(null, null, '/' + encodeURIComponent(this.roomId))
       }
 
       signaling.ondisconnect = () => {
         alert('You have been disconnected from the host.')
-        this.leave()
+        this.disconnect()
       }
 
       signaling.onpeercreate = createPeer
@@ -158,7 +163,7 @@ var app = new Vue({
       signaling.onerror = error => {
         if (error === 'nametaken') {
           alert('The name "' + this.userId + '" has already been taken')
-          this.ready = false
+          this.disconnect()
         }
       }
 
@@ -167,10 +172,14 @@ var app = new Vue({
 
       this.connecting = false
     },
-    setVideoSources() {
+    randomRoomId: function() {
+      this.roomId = randomString(2)
+      history.replaceState(null, null, '/' + this.roomId)
+    },
+    setVideoSources: function() {
       this.peers.forEach(peer => {
         var peerConnection = peerConnections[peer.name]
-        if (peerConnection.stream) $('#video-' + peer.name)[0].srcObject = peerConnection.stream
+        if (peerConnection.stream) $('#video-' + peer.safeId)[0].srcObject = peerConnection.stream
       })
     },
     updatePeer(name, key, value) {
@@ -212,6 +221,7 @@ var app = new Vue({
       this.hidden = false
       this.host = false
       this.ready = false
+      history.replaceState(null, null, '/')
 
       videoStream.getTracks().forEach(track => track.stop())
       videoStream = null
