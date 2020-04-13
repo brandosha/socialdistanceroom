@@ -8,13 +8,14 @@
 var peerConnections = { }
 
 function createPeer(peerName, incoming) {
-  const safeId = btoa(peerName).split('=', 2)[0]
+  const safeId = btoa(encodeURIComponent(peerName)).split('=', 2)[0]
 
   const peer = new RTCPeerConnection({
     iceServers: [{ 'urls': ['stun:stun.l.google.com:19302'] }],
     offerToReceiveAudio: true,
     offerToReceiveVideo: true
   })
+  peer.onnegotiationneeded = true
 
   let channel = null
   if (incoming) {
@@ -58,7 +59,6 @@ function createPeer(peerName, incoming) {
   peer.ontrack = e => {
     const stream = e.streams[0]
     const videoEl = $('#video-' + safeId)[0]
-    console.log(videoEl, peerName)
     if (stream && videoEl.srcObject !== stream) {
       peerConnections[peerName].stream = stream
       videoEl.srcObject = stream
@@ -95,7 +95,7 @@ function setUpChannel(channel, peerName) {
   }
 }
 
-/** @type { FirestoreSignaling } */
+/** @type { FirebaseSignaling } */
 var signaling
 /** @type { MediaStream } */
 var videoStream
@@ -111,31 +111,27 @@ var app = new Vue({
     host: false,
     muted: false,
     hidden: false,
-
-    connections: [],
-    documentId: null,
-    connectTo: '',
-    state: 0,
-    states: {
-      waiting: 0,
-      checkingId: 1,
-      checkingPeer: 2,
-      ready: 3
-    }
   },
   methods: {
     connect: async function () {
       this.connecting = true
 
-      const userId = this.userId.trim()//.toLowerCase()
+      const userId = this.userId.trim()
       this.userId = userId
       localStorage.setItem('user_id', userId)
 
-      const roomId = this.roomId.trim()//.toLowerCase()
+      const roomId = this.roomId.trim()
       this.roomId = roomId
       localStorage.setItem('room_id', roomId)
+
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      } catch {
+        this.connecting = false
+        return
+      }
       
-      signaling = new FirestoreSignaling(this.userId, this.roomId)
+      signaling = new FirebaseSignaling(this.userId, this.roomId)
 
       signaling.onroomcreate = () => {
         if (confirm('The room "' + roomId + '" doesn\'t exist. Would you like to create it?')) {
@@ -145,12 +141,25 @@ var app = new Vue({
         return false
       }
 
-      videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       signaling.onready = () => {
         this.ready = true
+        this.roomId = 'room' //signaling.roomData.name
         this.$nextTick(() => { $('#output-video-preview')[0].srcObject = videoStream })
 
         history.replaceState(null, null, '/' + encodeURIComponent(this.roomId))
+      }
+
+      signaling.onpeerdisconnnect = peerName => {
+        delete peerConnections[peerName]
+
+        let peerIndex = -1
+        this.peers.some((peer, index) => {
+          if (peer.name === peerName) {
+            peerIndex = index
+            return true
+          } 
+        })
+        if (peerIndex >= 0) this.peers.splice(peerIndex, 1)
       }
 
       signaling.ondisconnect = () => {
@@ -158,7 +167,7 @@ var app = new Vue({
         this.disconnect()
       }
 
-      signaling.onpeercreate = createPeer
+      signaling.buildpeer = createPeer
 
       signaling.onerror = error => {
         if (error === 'nametaken') {
@@ -217,19 +226,20 @@ var app = new Vue({
       }
     },
     disconnect: function() {
+      this.ready = false
+      this.connecting = false
       this.muted = false
       this.hidden = false
       this.host = false
-      this.ready = false
+      
+      this.roomId = ''
       history.replaceState(null, null, '/')
 
       videoStream.getTracks().forEach(track => track.stop())
       videoStream = null
 
       this.peers.forEach(peer => {
-        peerConnections[peer.name].connection.close()
         delete peerConnections[peer.name]
-
         this.peers.shift()
       })
       signaling.end()

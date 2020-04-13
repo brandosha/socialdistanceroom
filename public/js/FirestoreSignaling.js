@@ -7,8 +7,8 @@ class FirestoreSignaling {
     this.room = room
     this.name = name
 
-    this.roomId = sha1(room)
-    this.userId = btoa(name)
+    this.roomId = sha1(room.toLowerCase())
+    this.userId = btoa(encodeURIComponent(name))
 
     /** @typedef { 'nametaken' | 'notconnected' } ConnectionError */
     /** @type { (error: ConnectionError) => void } */
@@ -49,11 +49,12 @@ class FirestoreSignaling {
         return
       } else {
         this.roomData = data
-        await this.joinRoom() 
+        // await this.joinRoom() 
       }
     } else {
       if (!this.onroomcreate || !this.onroomcreate()) return
-      await this.createRoom()
+      this.owner = true
+      // await this.createRoom()
     }
 
     await this.watchPresence()
@@ -62,7 +63,10 @@ class FirestoreSignaling {
 
   async createRoom() {
     this.owner = true
-    this.roomData = { owner: this.name }
+    this.roomData = {
+      name: this.room,
+      owner: this.name
+    }
     await this.roomDoc.set(this.roomData)
     this.listenForNewPeers()
   }
@@ -85,7 +89,7 @@ class FirestoreSignaling {
       query.forEach(async snap => {
         const data = snap.data()
         if (data.offer) {
-          const peerName = atob(snap.id)
+          const peerName = decodeURIComponent(atob(snap.id))
           if (this._peers[peerName]) {
             snap.ref.set({
               name_taken: true

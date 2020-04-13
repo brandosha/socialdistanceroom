@@ -18,10 +18,11 @@
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/8.0.13/jsrsasign-all-min.js"></script>
 
     <script defer src="/js/utils.js"></script>
-    <script defer src="/js/FirestoreSignaling.js"></script>
+    <script defer src="/js/FirebaseSignaling.js"></script>
     <script defer src="/js/script.js"></script>
     
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
     <link rel="stylesheet" href="/css/loader.css" >
     <link rel="stylesheet" href="/css/dark.css">
   </head>
@@ -36,7 +37,7 @@
                 Room ID
               </label>
               <div class="input-group col mr-2 p-0">
-                <input v-model="roomId" id="room-id" class="form-control" :readonly="ready">
+                <input v-model="roomId" id="room-id" class="form-control" :readonly="ready || connecting">
                 <div v-if="!roomId" @click="randomRoomId" class="input-group-append">
                   <button class="btn btn-outline-secondary">
                     Random
@@ -51,7 +52,7 @@
               <label for="user-id" class="col-4 col-md-auto mb-0">
                 User ID
               </label>
-              <input v-model="userId" id="user-id" class="form-control col mr-2" :readonly="ready">
+              <input v-model="userId" id="user-id" class="form-control col mr-2" :readonly="ready || connecting">
             </div>
           </div>
 
@@ -87,16 +88,16 @@
         <div class="col-12 mt-2" :class="[widthClasses, (host || peers.length > 0) ? 'd-block' : 'd-none']">
           <div class="position-absolute text-light rounded m-1 px-1" style="background-color: rgba(0,0,0,0.5)">
             {{ userId }}
-            <span v-if="muted">(muted)</span>
-            <span v-if="hidden">(hidden)</span>
+            <i v-if="muted" class="fa fa-microphone-slash pl-1"></i>
+            <i v-if="hidden" class="fa fa-eye-slash pl-1"></i>
           </div>
           <video id="output-video-preview" class="mw-100" style="max-height: 75vh;" autoplay playsinline muted></video>
         </div>
         <div v-for="peer in peers" class="col-12 mt-2" :class="[widthClasses, { 'order-last': peer.hidden }]">
           <div class="position-absolute text-light rounded m-1 px-1" style="background-color: rgba(0,0,0,0.5)">
             {{ peer.name }}
-            <span v-if="peer.muted">(muted)</span>
-            <span v-if="peer.hidden">(hidden)</span>
+            <i v-if="peer.muted" class="fa fa-microphone-slash pl-1"></i>
+            <i v-if="peer.hidden" class="fa fa-eye-slash pl-1"></i>
           </div>
           <video :id="'video-' + peer.safeId" class="mw-100" style="max-height: 75vh;" autoplay playsinline></video>
         </div>

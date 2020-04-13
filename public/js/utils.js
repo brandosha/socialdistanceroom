@@ -20,8 +20,13 @@ function randomString(size) {
 /** @param { RTCPeerConnection } connection */
 function getAllIceCandidates(connection) {
   return new Promise(resolve => {
-    connection.addEventListener('icecandidate', e => {
-      if (e.candidate === null) resolve()
-    })
+    let candidates = []
+    function callback(e) {
+      if (e.candidate === null) {
+        connection.removeEventListener('icecandidate', callback)
+        resolve(candidates)
+      } else { candidates.push(e.candidate) }
+    }
+    connection.addEventListener('icecandidate', callback)
   })
 }
