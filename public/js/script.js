@@ -110,7 +110,7 @@ function setUpChannel(channel, peerName) {
 /** @type { FirebaseSignaling } */
 var signaling
 /** @type { MediaStream } */
-var videoStream
+var cameraStream
 /** @type { MediaStream } */
 var displayStream
 
@@ -140,9 +140,9 @@ var app = new Vue({
       localStorage.setItem('room_id', roomId)
 
       try {
-        videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        outgoingTracks.video = videoStream.getVideoTracks()[0]
-        outgoingTracks.audio = videoStream.getAudioTracks()[0]
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        outgoingTracks.video = cameraStream.getVideoTracks()[0]
+        outgoingTracks.audio = cameraStream.getAudioTracks()[0]
       } catch {
         this.connecting = false
         return
@@ -248,13 +248,18 @@ var app = new Vue({
       if (sharingScreen) {
         displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true })
         const displayTrack = displayStream.getVideoTracks()[0]
+
+        outgoingTracks.video.stop()
         outgoingTracks.video = displayTrack
         this.refreshOutgoingVideo()
       } else {
-        outgoingTracks.video = videoStream.getVideoTracks()[0]
+        const newCameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        const videoTrack = newCameraStream.getVideoTracks()[0]
+
+        outgoingTracks.video.stop()
+        outgoingTracks.video = videoTrack
         this.refreshOutgoingVideo()
 
-        displayStream.getTracks().forEach(track => track.stop())
         displayStream = null
       }
 
@@ -287,12 +292,13 @@ var app = new Vue({
       this.connecting = false
       this.muted = false
       this.hidden = false
+      this.sharingScreen = false
       
       this.roomId = ''
       history.replaceState(null, null, '/')
-
-      videoStream.getTracks().forEach(track => track.stop())
-      videoStream = null
+      
+      cameraStream.getTracks().forEach(track => track.stop())
+      cameraStream = null
       if (displayStream) {
         displayStream.getTracks().forEach(track => track.stop())
         displayStream = null
