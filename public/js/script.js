@@ -109,10 +109,6 @@ function setUpChannel(channel, peerName) {
 
 /** @type { FirebaseSignaling } */
 var signaling
-/** @type { MediaStream } */
-var cameraStream
-/** @type { MediaStream } */
-var displayStream
 
 var app = new Vue({
   el: '#app',
@@ -140,7 +136,7 @@ var app = new Vue({
       localStorage.setItem('room_id', roomId)
 
       try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         outgoingTracks.video = cameraStream.getVideoTracks()[0]
         outgoingTracks.audio = cameraStream.getAudioTracks()[0]
       } catch {
@@ -246,7 +242,7 @@ var app = new Vue({
       const sharingScreen = !this.sharingScreen
 
       if (sharingScreen) {
-        displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true })
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true })
         const displayTrack = displayStream.getVideoTracks()[0]
 
         outgoingTracks.video.stop()
@@ -259,8 +255,6 @@ var app = new Vue({
         outgoingTracks.video.stop()
         outgoingTracks.video = videoTrack
         this.refreshOutgoingVideo()
-
-        displayStream = null
       }
 
       this.sharingScreen = sharingScreen
@@ -297,12 +291,8 @@ var app = new Vue({
       this.roomId = ''
       history.replaceState(null, null, '/')
       
-      cameraStream.getTracks().forEach(track => track.stop())
-      cameraStream = null
-      if (displayStream) {
-        displayStream.getTracks().forEach(track => track.stop())
-        displayStream = null
-      }
+      outgoingTracks.video.stop()
+      outgoingTracks.audio.stop()
       
       this.peers.forEach(peer => {
         delete peerConnections[peer.name]

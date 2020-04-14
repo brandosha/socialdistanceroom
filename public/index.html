@@ -103,15 +103,21 @@
       </div>
 
       <div v-if="ready" class="menu fixed-bottom container-fluid">
-        <div class="row py-2">
+        <div class="row align-items-center">
           <div class="col text-center">
-            <button @click="toggleMute" class="btn btn-primary">
-              {{ muted ? 'Muted': 'Mute' }}
+            <button @click="toggleMute" class="btn d-inline-flex flex-column align-items-center">
+              <i class="fa fa-lg" :class="muted ? 'fa-microphone-slash' : 'fa-microphone'"></i>
+              <span class="small">
+                {{ muted ? 'Muted': 'Mute' }}
+              </span>
             </button>
           </div>
           <div class="col text-center">
-            <button @click="toggleHide" class="btn btn-primary">
-              {{ hidden ? 'Hidden' : 'Hide' }}
+            <button @click="toggleHide" class="btn d-inline-flex flex-column align-items-center">
+              <i class="fa fa-lg" :class="hidden ? 'fa-eye-slash' : 'fa-eye'"></i>
+              <span class="small">
+                {{ hidden ? 'Hidden' : 'Hide' }}
+              </span>
             </button>
           </div>
           <div class="col text-center">
