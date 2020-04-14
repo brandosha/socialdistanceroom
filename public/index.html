@@ -18,6 +18,7 @@
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/8.0.13/jsrsasign-all-min.js"></script>
 
     <script defer src="/js/utils.js"></script>
+    <script defer src="/js/StreamVolume.js"></script>
     <script defer src="/js/FirebaseSignaling.js"></script>
     <script defer src="/js/script.js"></script>
     
@@ -78,28 +79,28 @@
           </div>
           <div class="col text-center">
             <button @click="disconnect" class="btn btn-danger">
-              {{ host ? 'End' : 'Leave' }}
+              Leave
             </button>
           </div>
         </div>
       </div>
 
       <div v-if="ready" class="form-row mt-2 justify-content-around" style="margin-bottom: 2.5em;">
-        <div class="col-12 mt-2" :class="[widthClasses, (host || peers.length > 0) ? 'd-block' : 'd-none']">
+        <div class="col-12 mt-2" :class="widthClasses" style="height: 250px;">
           <div class="position-absolute text-light rounded m-1 px-1" style="background-color: rgba(0,0,0,0.5)">
             {{ userId }}
             <i v-if="muted" class="fa fa-microphone-slash pl-1"></i>
             <i v-if="hidden" class="fa fa-eye-slash pl-1"></i>
           </div>
-          <video id="output-video-preview" class="mw-100" style="max-height: 75vh;" autoplay playsinline muted></video>
+          <video id="output-video-preview" class="d-block mx-auto mw-100" style="max-height: 100%;" autoplay playsinline muted></video>
         </div>
-        <div v-for="peer in peers" class="col-12 mt-2" :class="[widthClasses, { 'order-last': peer.hidden }]">
+        <div v-for="peer in peers" class="col-12 mt-2" :class="[widthClasses, { 'order-last': peer.hidden, 'border border-primary': peer.speaking }]" style="height: 250px;">
           <div class="position-absolute text-light rounded m-1 px-1" style="background-color: rgba(0,0,0,0.5)">
             {{ peer.name }}
             <i v-if="peer.muted" class="fa fa-microphone-slash pl-1"></i>
             <i v-if="peer.hidden" class="fa fa-eye-slash pl-1"></i>
           </div>
-          <video :id="'video-' + peer.safeId" class="mw-100" style="max-height: 75vh;" autoplay playsinline></video>
+          <video :id="'video-' + peer.safeId" class="d-block mx-auto mw-100" style="max-height: 100%;" autoplay playsinline></video>
         </div>
       </div>
     <div id="loader" class="full-page-container">

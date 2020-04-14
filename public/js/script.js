@@ -3,6 +3,7 @@
  * @property { RTCPeerConnection } connection
  * @property { RTCDataChannel } channel
  * @property { MediaStream } stream
+ * @property { StreamVolume } volume
  */
 /** @type { Object<string, PeerConnection> } */
 var peerConnections = { }
@@ -60,8 +61,12 @@ function createPeer(peerName, incoming) {
     const stream = e.streams[0]
     const videoEl = $('#video-' + safeId)[0]
     if (stream && videoEl.srcObject !== stream) {
-      peerConnections[peerName].stream = stream
       videoEl.srcObject = stream
+    }
+
+    if (!peerConnections[peerName].stream) {
+      peerConnections[peerName].stream = stream
+      peerConnections[peerName].volume = new StreamVolume(stream)
     }
   }
 
@@ -69,7 +74,8 @@ function createPeer(peerName, incoming) {
     name: peerName,
     safeId: safeId,
     muted: false,
-    hidden: false
+    hidden: false,
+    speaking: false
   })
   
   return peer
@@ -79,6 +85,15 @@ function createPeer(peerName, incoming) {
  * @param { RTCDataChannel } channel 
  */
 function setUpChannel(channel, peerName) {
+  channel.onopen = () => {
+    channel.send(JSON.stringify({
+      muted: app.muted
+    }))
+    channel.send(JSON.stringify({
+      hidden: app.hidden
+    }))
+  }
+
   channel.onmessage = e => {
     let data = e.data
     try { data = JSON.parse(data) }
@@ -160,6 +175,8 @@ var app = new Vue({
           } 
         })
         if (peerIndex >= 0) this.peers.splice(peerIndex, 1)
+
+        this.setVideoSources()
       }
 
       signaling.ondisconnect = () => {
@@ -260,3 +277,19 @@ var app = new Vue({
     }
   }
 })
+
+setInterval(function() {
+  let loudestIndex = -1
+  let loudestVolume = -1
+  app.peers.forEach((peer, index) => {
+    app.peers[index].speaking = false
+    if (peer.muted || !peerConnections[peer.name].volume) return
+    const volume = peerConnections[peer.name].volume.getVolume()
+    if (volume > loudestVolume) {
+      loudestVolume = volume
+      loudestIndex = index
+    }
+  })
+
+  if (loudestIndex > -1) app.peers[loudestIndex].speaking = true
+}, 100)

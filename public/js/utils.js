@@ -3,7 +3,7 @@ const firestore = firebase.firestore()
 
 /** @type { (text: string) => string } */
 const sha1 = KJUR.crypto.Util.sha1
-const stunServer = 'stun:stun.l.google.com:19302'
+AudioContext = webkitAudioContext || AudioContext
 
 $(document).ready(() => {
   $('#loader').hide()
