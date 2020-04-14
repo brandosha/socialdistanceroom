@@ -48,6 +48,7 @@ class FirebaseSignaling {
     /** @type { boolean } */
     this.owner = false
 
+    this._started = false
     this.watchPresence()
   }
 
@@ -55,6 +56,8 @@ class FirebaseSignaling {
     let first = true
     let prevDisconnected = false
     database.ref('.info/connected').on('value', snap => {
+      if (!this._started) return
+
       let connected = snap.val()
       if (connected) {
         if (prevDisconnected) this.start()
@@ -70,6 +73,8 @@ class FirebaseSignaling {
   }
 
   async start() {
+    this._started = true
+
     const roomRef = this.roomRef = database.ref('rooms').child(this.roomId)
     const myPeerRef = this.myPeerRef = roomRef.child('peers').child(this.userId)
     const usersRef = this.usersRef = database.ref('users').child(this.roomId)
