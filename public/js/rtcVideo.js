@@ -5,9 +5,6 @@ Vue.component('rtc-video', {
       id: encodeForId(this.peer.name)
     }
   },
-  template: $('rtc-video-template').html(),
-  created: function() {
-    console.log(this.peer)
-  },
+  template: $('rtc-video-template').html()
 })
 $('rtc-video-template').remove()

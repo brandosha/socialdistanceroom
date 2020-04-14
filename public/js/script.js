@@ -8,15 +8,23 @@
 /** @type { Object<string, PeerConnection> } */
 var peerConnections = { }
 
+/**
+ * @typedef OutgoingTracks
+ * @property { MediaStreamTrack } video 
+ * @property { MediaStreamTrack } audio 
+ */
+/** @type { OutgoingTracks } */
+var outgoingTracks = { }
+
 function createPeer(peerName, incoming) {
-  const safeId = btoa(encodeURIComponent(peerName)).split('=', 2)[0]
+  const safeId = encodeForId(peerName)
 
   const peer = new RTCPeerConnection({
     iceServers: [{ 'urls': ['stun:stun.l.google.com:19302'] }],
     offerToReceiveAudio: true,
     offerToReceiveVideo: true
   })
-  peer.onnegotiationneeded = true
+  peer.onnegotiationneeded = console.log
 
   let channel = null
   if (incoming) {
@@ -35,13 +43,9 @@ function createPeer(peerName, incoming) {
     stream: null
   }
 
-  const stream = videoStream //videoStream.clone()
-  stream.getAudioTracks().forEach(track => {
-    peer.addTrack(track, stream)
-  })
-  stream.getVideoTracks().forEach(track => {
-    peer.addTrack(track, stream)
-  })
+  let stream = new MediaStream()
+  peer.addTrack(outgoingTracks.video, stream)
+  peer.addTrack(outgoingTracks.audio, stream)
 
   peer.ontrack = e => {
     const stream = e.streams[0]
@@ -58,10 +62,10 @@ function createPeer(peerName, incoming) {
 
   app.peers.push({
     name: peerName,
-    safeId: safeId,
     muted: true,
     hidden: true,
-    speaking: false
+    speaking: false,
+    sharingScreen: false
   })
   
   return peer
@@ -76,7 +80,10 @@ function setUpChannel(channel, peerName) {
       muted: app.muted
     }))
     channel.send(JSON.stringify({
-      hidden: app.hidden
+      hidden: app.hidden,
+    }))
+    channel.send(JSON.stringify({
+      sharingScreen: app.sharingScreen
     }))
   }
 
@@ -90,8 +97,12 @@ function setUpChannel(channel, peerName) {
 
     if (data.hasOwnProperty('muted')) {
       app.updatePeer(peerName, 'muted', data.muted)
-    } else if (data.hasOwnProperty('hidden')) {
+    }
+    if (data.hasOwnProperty('hidden')) {
       app.updatePeer(peerName, 'hidden', data.hidden)
+    }
+    if (data.hasOwnProperty('sharingScreen')) {
+      app.updatePeer(peerName, 'sharingScreen', data.sharingScreen)
     }
   }
 }
@@ -100,6 +111,8 @@ function setUpChannel(channel, peerName) {
 var signaling
 /** @type { MediaStream } */
 var videoStream
+/** @type { MediaStream } */
+var displayStream
 
 var app = new Vue({
   el: '#app',
@@ -111,6 +124,8 @@ var app = new Vue({
     peers: [],
     muted: false,
     hidden: false,
+    sharingScreen: false,
+    canShareScreen: !!navigator.mediaDevices.getDisplayMedia
   },
   methods: {
     connect: async function () {
@@ -126,6 +141,8 @@ var app = new Vue({
 
       try {
         videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        outgoingTracks.video = videoStream.getVideoTracks()[0]
+        outgoingTracks.audio = videoStream.getAudioTracks()[0]
       } catch {
         this.connecting = false
         return
@@ -143,7 +160,11 @@ var app = new Vue({
 
       signaling.onready = () => {
         this.ready = true
-        this.$nextTick(() => { $('#video-' + encodeForId(this.userId))[0].srcObject = videoStream })
+        this.$nextTick(() => {
+          let stream = new MediaStream()
+          stream.addTrack(outgoingTracks.video)
+          $('#video-' + encodeForId(this.userId))[0].srcObject = stream
+        })
 
         history.replaceState(null, null, '/' + encodeURIComponent(this.roomId))
       }
@@ -199,11 +220,49 @@ var app = new Vue({
         }
       })
     },
+    copyLink: function() {
+      const copy = $('.copy')
+      copy.val(location.host + location.pathname)
+      copy.focus()
+      copy.select()
+
+      document.execCommand('copy')
+    },
+    refreshOutgoingVideo: function() {
+      let stream = new MediaStream()
+      stream.addTrack(outgoingTracks.video)
+      $('#video-' + encodeForId(this.userId))[0].srcObject = stream
+
+      for (const peerName in peerConnections) {
+        const peer = peerConnections[peerName]
+        peer.connection.getSenders().forEach(sender => {
+          if (sender.track.kind === 'video') {
+            sender.replaceTrack(outgoingTracks.video)
+          }
+        })
+      }
+    },
+    toggleScreenShare: async function() {
+      const sharingScreen = !this.sharingScreen
+
+      if (sharingScreen) {
+        displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true })
+        const displayTrack = displayStream.getVideoTracks()[0]
+        outgoingTracks.video = displayTrack
+        this.refreshOutgoingVideo()
+      } else {
+        outgoingTracks.video = videoStream.getVideoTracks()[0]
+        this.refreshOutgoingVideo()
+
+        displayStream.getTracks().forEach(track => track.stop())
+        displayStream = null
+      }
+
+      this.sharingScreen = sharingScreen
+    },
     toggleHide: function() {
       const hidden = !this.hidden
-      videoStream.getVideoTracks().forEach(track => {
-        track.enabled = !hidden
-      })
+      outgoingTracks.video.enabled = !hidden
       this.hidden = hidden
       
       for (name in peerConnections) {
@@ -214,9 +273,7 @@ var app = new Vue({
     },
     toggleMute: function() {
       const muted = !this.muted
-      videoStream.getAudioTracks().forEach(track => {
-        track.enabled = !muted
-      })
+      outgoingTracks.audio.enabled = !muted
       this.muted = muted
 
       for (name in peerConnections) {
@@ -236,7 +293,11 @@ var app = new Vue({
 
       videoStream.getTracks().forEach(track => track.stop())
       videoStream = null
-
+      if (displayStream) {
+        displayStream.getTracks().forEach(track => track.stop())
+        displayStream = null
+      }
+      
       this.peers.forEach(peer => {
         delete peerConnections[peer.name]
         this.peers.shift()

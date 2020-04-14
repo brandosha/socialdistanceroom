@@ -1,3 +1,25 @@
+.menu { background-color: #dddddd; }
+.participant-header { color: #444444 }
+@media (prefers-color-scheme: dark) {
+  .menu { background-color: #333333; }
+  .room-name { color: #dddddd; }
+  .participant-header { color: #aaaaaa }
+  .participant-name { color: #dddddd }
+}
+
+.copy {
+  position: fixed;
+  top: -100px;
+  left: -100px;
+  width: 0px;
+  height: 0px;
+}
+
+.rtc-videos {
+  margin-top: 1.5em;
+  margin-bottom: 3em;
+}
+
 .rtc-video {
   height: 250px;
 }
@@ -12,12 +34,12 @@
 .rtc-video > div.speaking {
   border-style: solid;
 }
+
 .rtc-video > div > div {
   position: absolute;
   background-color: rgba(0, 0, 0, 0.5);
   margin: .25rem;
 }
-
 .rtc-video > div.hidden > div {
   position: initial;
   background: none;
@@ -27,6 +49,7 @@
   height: 100%;
   font-size: 1.5em;
 }
+
 .rtc-video > div > video {
   max-width: 100%;
   max-height: 100%;

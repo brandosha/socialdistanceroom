@@ -24,6 +24,8 @@ body { transition: background 0.25s; }
     .text-dark { color: #bbbbbb!important; }
     a.text-dark:focus, a.text-dark:hover { color: #aaaaaa!important; }
     
+    .btn { color: #f8f9fa; }
+    .btn:hover { color: #f8f9fa; }
     .btn-light { background: #bbbbbb; }
     .btn-light:hover { background: #aaaaaa; }
     .btn-outline-dark { color: #bbbbbb }

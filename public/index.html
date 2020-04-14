@@ -14,6 +14,7 @@
     <script defer src="/__/firebase/init.js"></script>
 
     <script defer src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script defer src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js" integrity="sha384-6khuMg9gaYr5AxOqhkVIODVIvm9ynTT5J4V1cfthmT+emCG6yVmEZsRHdxlotUnm" crossorigin="anonymous"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/8.0.13/jsrsasign-all-min.js"></script>
 
@@ -32,7 +33,7 @@
 
   <body>
     <div id="app" class="container py-3">
-      <form @submit.prevent="connect">
+      <form v-if="!ready" @submit.prevent="connect">
         <div class="form-row">
           <div class="form-group col-12 col-md px-md-3">
             <div class="row align-items-center">
@@ -67,7 +68,41 @@
         </div>
       </form>
 
-      <div v-if="ready" class="fixed-bottom container-fluid bg-dark">
+      <div v-if="ready" class="menu fixed-top container-fluid">
+        <div class="d-flex justify-content-between">
+          <div>
+            <div class="dropdown" title="Info">
+              <button class="btn btn-sm" data-toggle="dropdown">
+                <i class="fa fa-info-circle"></i>
+              </button>
+              <div class="dropdown-menu" style="width: 200px;">
+                <div class="px-3">
+                  <div class="room-name text-capitalize h5 pb-1">
+                    {{ roomId }}
+                  </div>
+                  <div class="participant-header">
+                    Participant Name
+                  </div>
+                  <div class="participant-name">
+                    {{ userId }}
+                  </div>
+                  <button @click="copyLink" class="btn btn-sm btn-primary mt-3 mb-1">
+                    Copy link
+                  </button>
+                  <textarea class="copy"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <button v-if="canShareScreen" @click="toggleScreenShare" class="btn btn-sm" :class="{ 'text-danger': sharingScreen }" title="Share screen">
+              <i class="fa fa-television"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="ready" class="menu fixed-bottom container-fluid">
         <div class="row py-2">
           <div class="col text-center">
             <button @click="toggleMute" class="btn btn-primary">
@@ -87,7 +122,7 @@
         </div>
       </div>
 
-      <div v-if="ready" class="form-row mt-2 justify-content-around" style="margin-bottom: 3em;">
+      <div v-if="ready" class="rtc-videos form-row justify-content-around">
         <!-- <div class="col-12" :class="widthClasses" style="height: 250px;">
           <div class="position-absolute text-light rounded m-1 px-1" style="background-color: rgba(0,0,0,0.5)">
             {{ userId }}
