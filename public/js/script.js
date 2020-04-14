@@ -35,20 +35,6 @@ function createPeer(peerName, incoming) {
     stream: null
   }
 
-  peer.onconnectionstatechange = e => {
-    console.log(peerName, peer.connectionState)
-    if (peer.connectionState === 'failed') {
-      delete peerConnections[peerName]
-      app.peers.some((peer, index) => {
-        if (peer.name === peerName) {
-          app.peers.splice(index, 1)
-          return true
-        }
-      })
-      app.setVideoSources()
-    }
-  }
-
   const stream = videoStream //videoStream.clone()
   stream.getAudioTracks().forEach(track => {
     peer.addTrack(track, stream)
@@ -135,7 +121,7 @@ var app = new Vue({
       this.userId = userId
       localStorage.setItem('user_id', userId)
 
-      const roomId = this.roomId.trim()
+      const roomId = this.roomId.trim().toLowerCase()
       this.roomId = roomId
       localStorage.setItem('room_id', roomId)
 
@@ -158,7 +144,7 @@ var app = new Vue({
 
       signaling.onready = () => {
         this.ready = true
-        this.roomId = 'room' //signaling.roomData.name
+        // this.roomId = signaling.roomData.name
         this.$nextTick(() => { $('#output-video-preview')[0].srcObject = videoStream })
 
         history.replaceState(null, null, '/' + encodeURIComponent(this.roomId))

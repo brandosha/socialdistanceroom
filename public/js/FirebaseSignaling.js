@@ -7,7 +7,7 @@ class FirebaseSignaling {
     this.room = room
     this.name = name
 
-    this.roomId = sha1(room.toLowerCase())
+    this.roomId = sha1(room)
     this.userId = btoa(encodeURIComponent(name))
 
     /** @typedef { 'nametaken' | 'notconnected' } ConnectionError */
@@ -47,26 +47,29 @@ class FirebaseSignaling {
 
     /** @type { boolean } */
     this.owner = false
+
+    this.watchPresence()
+  }
+
+  watchPresence() {
+    let first = true
+    let prevDisconnected = false
+    database.ref('.info/connected').on('value', snap => {
+      let connected = snap.val()
+      if (connected) {
+        if (prevDisconnected) this.start()
+      } else {
+        Object.keys(this.peers).forEach(name => this.onpeerdisconnnect(name))
+        this.end(true)
+        if (first && this.onerror) this.onerror('notconnected')
+      }
+
+      first = false
+      prevDisconnected = !connected
+    })
   }
 
   async start() {
-    /*this.roomDoc = firestore.collection('rooms').doc(this.roomId)
-    const roomSnap = await this.roomDoc.get()
-    if (roomSnap.exists) {
-      const data = roomSnap.data()
-      if (data.owner === this.name) {
-        if (this.onerror) this.onerror('nametaken')
-        return
-      } else {
-        this.roomData = data
-        // await this.joinRoom() 
-      }
-    } else {
-      if (!this.onroomcreate || !this.onroomcreate()) return
-      this.owner = true
-      // await this.createRoom()
-    }*/
-
     const roomRef = this.roomRef = database.ref('rooms').child(this.roomId)
     const myPeerRef = this.myPeerRef = roomRef.child('peers').child(this.userId)
     const usersRef = this.usersRef = database.ref('users').child(this.roomId)
@@ -109,13 +112,6 @@ class FirebaseSignaling {
     return userRef.child(this.userId).set(data)
   }
 
-  /**
-   * @param { RTCPeerConnection } rtc 
-   */
-  async setUpPeerConnection(rtc) {
-    rtc.onicegatheringstatechange = console.log
-  }
-
   async makeSignalingConnection(peerId) {
     const peerName = decodeURIComponent(atob(peerId))
 
@@ -127,7 +123,7 @@ class FirebaseSignaling {
       channel: channel
     }
 
-    this.setUpPeerConnection(rtc)
+    this.setUpPeerSignalingConnection(rtc, peerName)
     this.setUpSignalingChannel(channel, peerName)
     channel.onopen = () => {
       this.connectWithPeer(peerName)
@@ -156,7 +152,7 @@ class FirebaseSignaling {
 
       if (message.type === 'offer') {
         const rtc = new RTCPeerConnection(FirebaseSignaling.iceConfig)
-        this.setUpPeerConnection(rtc)
+        this.setUpPeerSignalingConnection(rtc, peerName)
         rtc.ondatachannel = e => {
           this.setUpSignalingChannel(e.channel, peerName)
           this._peers[peerName] = {
@@ -218,6 +214,42 @@ class FirebaseSignaling {
   }
 
   /**
+   * @param { RTCPeerConnection } rtc
+   */
+  setUpPeerSignalingConnection(rtc, peerName) {
+    let restartingIce = false
+    rtc.onconnectionstatechange = async () => {
+      console.log(peerName, rtc.connectionState, peerName > this.name)
+      if (rtc.connectionState === 'failed' && peerName > this.name) {
+        restartingIce = true
+
+        const offer = await rtc.createOffer({ iceRestart: true })
+        await rtc.setLocalDescription(offer)
+        await getAllIceCandidates(rtc)
+
+        const peerId = btoa(encodeURIComponent(peerName))
+        this.sendData(peerId, {
+          data: rtc.localDescription.sdp,
+          type: 'offer'
+        })
+      } else if (restartingIce && rtc.connectionState === 'connected') {
+        console.log(peerName, 'reconnected signaling')
+
+        const peer = this.peers[peerName]
+        const offer = await peer.createOffer({ iceRestart: true })
+        await peer.setLocalDescription(offer)
+        await getAllIceCandidates(peer)
+
+        const channel = this._peers[peerName].channel
+        channel.send(JSON.stringify({
+          data: peer.localDescription.sdp,
+          type: 'offer'
+        }))
+      }
+    }
+  }
+
+  /**
    * @param { RTCDataChannel } channel
    * @param { string } peerName
    */
@@ -256,7 +288,7 @@ class FirebaseSignaling {
     }
   }
 
-  async end() {
+  async end(internal) {
     this.userRef.off()
     this.roomRef.child('peers').off()
     this.myPeerRef.onDisconnect().cancel()
@@ -272,6 +304,8 @@ class FirebaseSignaling {
 
     this._peers = { }
     this.peers = { }
+
+    if (!internal) database.ref('.info/connected').off()
   }
 }
 FirebaseSignaling.iceConfig = {
