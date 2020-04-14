@@ -18,6 +18,7 @@
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/8.0.13/jsrsasign-all-min.js"></script>
 
     <script defer src="/js/utils.js"></script>
+    <script defer src="js/rtcVideo.js"></script>
     <script defer src="/js/StreamVolume.js"></script>
     <script defer src="/js/FirebaseSignaling.js"></script>
     <script defer src="/js/script.js"></script>
@@ -26,6 +27,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
     <link rel="stylesheet" href="/css/loader.css" >
     <link rel="stylesheet" href="/css/dark.css">
+    <link rel="stylesheet" href="/css/style.css">
   </head>
 
   <body>
@@ -85,8 +87,8 @@
         </div>
       </div>
 
-      <div v-if="ready" class="form-row mt-2 justify-content-around" style="margin-bottom: 2.5em;">
-        <div class="col-12 mt-2" :class="widthClasses" style="height: 250px;">
+      <div v-if="ready" class="form-row mt-2 justify-content-around" style="margin-bottom: 3em;">
+        <!-- <div class="col-12" :class="widthClasses" style="height: 250px;">
           <div class="position-absolute text-light rounded m-1 px-1" style="background-color: rgba(0,0,0,0.5)">
             {{ userId }}
             <i v-if="muted" class="fa fa-microphone-slash pl-1"></i>
@@ -94,14 +96,30 @@
           </div>
           <video id="output-video-preview" class="d-block mx-auto mw-100" style="max-height: 100%;" autoplay playsinline muted></video>
         </div>
-        <div v-for="peer in peers" class="col-12 mt-2" :class="[widthClasses, { 'order-last': peer.hidden, 'border border-primary': peer.speaking }]" style="height: 250px;">
+        <div v-for="peer in peers" class="col-12" :class="[widthClasses, { 'order-last': peer.hidden, 'border border-primary': peer.speaking }]" style="height: 250px;">
           <div class="position-absolute text-light rounded m-1 px-1" style="background-color: rgba(0,0,0,0.5)">
             {{ peer.name }}
             <i v-if="peer.muted" class="fa fa-microphone-slash pl-1"></i>
             <i v-if="peer.hidden" class="fa fa-eye-slash pl-1"></i>
           </div>
           <video :id="'video-' + peer.safeId" class="d-block mx-auto mw-100" style="max-height: 100%;" autoplay playsinline></video>
-        </div>
+        </div> -->
+        <rtc-video :class="widthClasses" :peer="{ name: userId, muted: muted, hidden: hidden }"></rtc-video>
+        <rtc-video v-for="peer in peers" :class="widthClasses" :peer="peer"></rtc-video>
+        <rtc-video-template>
+          <div class="py-1 rtc-video">
+            <div class="border-primary" :class="{ 'speaking': peer.speaking, 'hidden': peer.hidden }">
+              <div class="d-flex align-items-center text-light rounded px-1">
+                <div class="w-100 text-center">
+                  {{ peer.name }}
+                  <i v-if="peer.muted" class="fa fa-microphone-slash pl-1"></i>
+                  <i v-if="peer.hidden" class="fa fa-eye-slash pl-1"></i>
+                </div>
+              </div>
+              <video :id="'video-' + id" class="mx-auto" :class="peer.hidden ? 'd-none' : 'd-block'" autoplay playsinline></video>
+            </div>
+          </div>
+        </rtc-video-template>
       </div>
     <div id="loader" class="full-page-container">
       <div class="loader-container">

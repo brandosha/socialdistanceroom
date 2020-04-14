@@ -17,6 +17,10 @@ function randomString(size) {
   return str
 }
 
+function encodeForId(text) {
+  return btoa(encodeURIComponent(text)).split('=', 2)[0]
+}
+
 /** @param { RTCPeerConnection } connection */
 function getAllIceCandidates(connection) {
   return new Promise(resolve => {

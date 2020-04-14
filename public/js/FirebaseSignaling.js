@@ -45,9 +45,6 @@ class FirebaseSignaling {
     /** @type { Object<string, SignalingPeer> } */
     this._peers = { }
 
-    /** @type { boolean } */
-    this.owner = false
-
     this._started = false
     this.watchPresence()
   }

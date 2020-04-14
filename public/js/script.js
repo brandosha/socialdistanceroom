@@ -59,8 +59,8 @@ function createPeer(peerName, incoming) {
   app.peers.push({
     name: peerName,
     safeId: safeId,
-    muted: false,
-    hidden: false,
+    muted: true,
+    hidden: true,
     speaking: false
   })
   
@@ -109,7 +109,6 @@ var app = new Vue({
     connecting: false,
     ready: false,
     peers: [],
-    host: false,
     muted: false,
     hidden: false,
   },
@@ -144,8 +143,7 @@ var app = new Vue({
 
       signaling.onready = () => {
         this.ready = true
-        // this.roomId = signaling.roomData.name
-        this.$nextTick(() => { $('#output-video-preview')[0].srcObject = videoStream })
+        this.$nextTick(() => { $('#video-' + encodeForId(this.userId))[0].srcObject = videoStream })
 
         history.replaceState(null, null, '/' + encodeURIComponent(this.roomId))
       }
@@ -180,7 +178,6 @@ var app = new Vue({
       }
 
       await signaling.start()
-      this.host = signaling.owner
 
       this.connecting = false
     },
@@ -233,7 +230,6 @@ var app = new Vue({
       this.connecting = false
       this.muted = false
       this.hidden = false
-      this.host = false
       
       this.roomId = ''
       history.replaceState(null, null, '/')
@@ -256,6 +252,7 @@ var app = new Vue({
     widthClasses: function() {
       const connected = this.peers.length
       return {
+        "col-12": true,
         "col-md-6": connected > 0,
         "col-lg-4": connected > 1,
         "col-xl-3": connected > 2
