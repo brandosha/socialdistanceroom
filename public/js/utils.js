@@ -3,7 +3,7 @@ const firestore = firebase.firestore()
 
 /** @type { (text: string) => string } */
 const sha1 = KJUR.crypto.Util.sha1
-AudioContext = webkitAudioContext || AudioContext
+AudioContext = window.AudioContext || window.webkitAudioContext
 
 $(document).ready(() => {
   $('#loader').hide()
@@ -15,6 +15,15 @@ function randomString(size) {
     str += Math.floor(Math.random() * 0xFFFFFF).toString(35)
   }
   return str
+}
+
+function titleCase(text) {
+  const words = text.split(' ')
+  const capitalized = words.map(word => {
+    if (word.length === 0) return ''
+    return word[0].toUpperCase() + word.slice(1)
+  })
+  return capitalized.join(' ')
 }
 
 function encodeForId(text) {

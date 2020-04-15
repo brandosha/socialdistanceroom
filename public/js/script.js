@@ -77,12 +77,8 @@ function createPeer(peerName, incoming) {
 function setUpChannel(channel, peerName) {
   channel.onopen = () => {
     channel.send(JSON.stringify({
-      muted: app.muted
-    }))
-    channel.send(JSON.stringify({
+      muted: app.muted,
       hidden: app.hidden,
-    }))
-    channel.send(JSON.stringify({
       sharingScreen: app.sharingScreen
     }))
   }
@@ -131,7 +127,7 @@ var app = new Vue({
       this.userId = userId
       localStorage.setItem('user_id', userId)
 
-      const roomId = this.roomId.trim().toLowerCase()
+      const roomId = titleCase(this.roomId.trim())
       this.roomId = roomId
       localStorage.setItem('room_id', roomId)
 
@@ -144,7 +140,7 @@ var app = new Vue({
         return
       }
       
-      signaling = new FirebaseSignaling(this.userId, this.roomId)
+      signaling = new FirebaseSignaling(this.userId, this.roomId.toLowerCase())
 
       signaling.onroomcreate = () => {
         if (confirm('The room "' + roomId + '" doesn\'t exist. Would you like to create it?')) {
@@ -163,6 +159,8 @@ var app = new Vue({
         })
 
         history.replaceState(null, null, '/' + encodeURIComponent(this.roomId))
+        let roomName = this.roomId
+        document.title = roomName + ' - Social Distance Room'
       }
 
       signaling.onpeerdisconnnect = peerName => {
@@ -190,17 +188,16 @@ var app = new Vue({
       signaling.onerror = error => {
         if (error === 'nametaken') {
           alert('The name "' + this.userId + '" has already been taken')
-          this.disconnect()
         }
       }
 
-      await signaling.start()
+      // await signaling.start()
+      signaling.onready()
 
       this.connecting = false
     },
     randomRoomId: function() {
       this.roomId = randomString(2)
-      history.replaceState(null, null, '/' + this.roomId)
     },
     setVideoSources: function() {
       this.peers.forEach(peer => {
@@ -258,6 +255,11 @@ var app = new Vue({
       }
 
       this.sharingScreen = sharingScreen
+      for (name in peerConnections) {
+        peerConnections[name].channel.send(JSON.stringify({
+          sharingScreen: sharingScreen
+        }))
+      }
     },
     toggleHide: function() {
       const hidden = !this.hidden
@@ -290,6 +292,7 @@ var app = new Vue({
       
       this.roomId = ''
       history.replaceState(null, null, '/')
+      document.title = 'Social Distance Room'
       
       outgoingTracks.video.stop()
       outgoingTracks.audio.stop()

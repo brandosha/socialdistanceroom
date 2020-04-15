@@ -50,7 +50,6 @@ class FirebaseSignaling {
   }
 
   watchPresence() {
-    let first = true
     let prevDisconnected = false
     database.ref('.info/connected').on('value', snap => {
       if (!this._started) return
@@ -61,10 +60,9 @@ class FirebaseSignaling {
       } else {
         Object.keys(this.peers).forEach(name => this.onpeerdisconnnect(name))
         this.end(true)
-        if (first && this.onerror) this.onerror('notconnected')
+        if (this.onerror) this.onerror('notconnected')
       }
 
-      first = false
       prevDisconnected = !connected
     })
   }
