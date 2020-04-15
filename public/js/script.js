@@ -191,8 +191,7 @@ var app = new Vue({
         }
       }
 
-      // await signaling.start()
-      signaling.onready()
+      await signaling.start()
 
       this.connecting = false
     },
