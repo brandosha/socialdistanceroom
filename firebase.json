@@ -14,9 +14,9 @@
     ],
     "headers": [
       {
-        "source": "assets.js",
+        "source": "/js/assets.js",
         "headers": [
-          { "key": "Cache-Control", "value": "max-age=0" }
+          { "key": "Cache-Control", "value": "no-store" }
         ]
       }
     ]
