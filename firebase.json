@@ -11,6 +11,14 @@
         "source": "**",
         "destination": "/index.html"
       }
+    ],
+    "headers": [
+      {
+        "source": "assets.js",
+        "headers": [
+          { "key": "Cache-Control", "value": "max-age=0" }
+        ]
+      }
     ]
   }
 }
