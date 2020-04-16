@@ -20,6 +20,10 @@ body { transition: background 0.25s; }
         background: #151515;
         color: #cccccc;
     }
+    .dropdown-item.active {
+        background-color: #007bff;
+        color: white;
+    }
     
     .text-dark { color: #bbbbbb!important; }
     a.text-dark:focus, a.text-dark:hover { color: #aaaaaa!important; }

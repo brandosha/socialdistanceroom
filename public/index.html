@@ -20,6 +20,7 @@
 
     <script defer src="/js/utils.js"></script>
     <script defer src="js/rtcVideo.js"></script>
+    <script defer src="js/chatMenu.js"></script>
     <script defer src="/js/StreamVolume.js"></script>
     <script defer src="/js/FirebaseSignaling.js"></script>
     <script defer src="/js/script.js"></script>
@@ -103,8 +104,8 @@
       </div>
 
       <div v-if="ready" class="menu fixed-bottom container-fluid">
-        <div class="row align-items-center">
-          <div class="col text-center">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="text-center">
             <button @click="toggleMute" class="btn d-inline-flex flex-column align-items-center">
               <i class="py-1 ri-xl" :class="muted ? 'ri-mic-off-fill' : 'ri-mic-fill'"></i>
               <span class="small">
@@ -112,7 +113,7 @@
               </span>
             </button>
           </div>
-          <div class="col text-center">
+          <div class="text-center">
             <button @click="toggleHide" class="btn d-inline-flex flex-column align-items-center">
               <i class="py-1 ri-xl" :class="hidden ? 'ri-eye-off-fill' : 'ri-eye-fill'"></i>
               <span class="small">
@@ -120,7 +121,15 @@
               </span>
             </button>
           </div>
-          <div class="col text-center">
+          <div class="text-center">
+            <button @click="showChat = true" class="btn d-inline-flex flex-column align-items-center">
+              <i class="py-1 ri-xl ri-message-2-fill"></i>
+              <span class="small">
+                Chat
+              </span>
+            </button>
+          </div>
+          <div class="text-center">
             <button @click="disconnect" class="btn btn-danger">
               Leave
             </button>
@@ -145,6 +154,51 @@
           </div>
         </rtc-video-template>
       </div>
+
+      <chat-menu :class="showChat ? 'd-block' : 'd-none'" :peers="peers"></chat-menu>
+      <chat-menu-template>
+        <div @click.self="hide" class="chat-menu-bg">
+          <div class="menu chat-menu-body mx-auto">
+            <div class="container-fluid d-flex flex-column h-100 p-0">
+              <div class="d-flex justify-content-between align-items-center border-secondary border-bottom pt-2 pb-1 px-3">
+                <h3 class="modal-title">Chat</h3>
+                <button @click="hide" class="close">
+                  &times;
+                </button>
+              </div>
+              <div class="flex-grow-1 overflow-auto px-3">
+                <div v-for="message in messages" class="py-2">
+                  <div class="small">
+                    From {{ message.from }} to {{ message.to }}
+                  </div>
+                  {{ message.text }}
+                </div>
+              </div>
+              <div class="border-secondary border-top p-3">
+                <form @submit.prevent="sendMessage" class="form-row">
+                  <div class="col">
+                    <input v-model="message" class="form-control" placeholder="Message">
+                  </div>
+                  <div class="btn-group dropup">
+                    <button class="btn btn-primary d-inline-flex align-items-center" :disabled="!message || peers.length === 0">
+                      <i class="ri-chat-upload-fill pr-2"></i>
+                      <div class="text-truncate" :title="selectedPeer" style="height: 1.5em; max-width: 100px;">
+                        {{ selectedPeer }}
+                      </div>
+                    </button>
+                    <button type="button" :disabled="peers.length === 0" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
+                    <div class="dropdown-menu overflow-auto">
+                      <button v-for="option in peersPlusEveryone" type="button" @click="selectedPeer = option" class="dropdown-item" :class="{ 'active': option === selectedPeer }" >
+                        {{ option }}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </chat-menu-template>
     </div>
     <div id="loader" class="full-page-container">
       <div class="loader-container">

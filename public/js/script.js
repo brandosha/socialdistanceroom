@@ -100,6 +100,15 @@ function setUpChannel(channel, peerName) {
     if (data.hasOwnProperty('sharingScreen')) {
       app.updatePeer(peerName, 'sharingScreen', data.sharingScreen)
     }
+    
+    if (data.hasOwnProperty('from') && data.hasOwnProperty('to') && data.hasOwnProperty('text')) {
+      if (data.to === app.userId) data.to = 'You'
+      messages.push({
+        from: data.from,
+        to: data.to,
+        text: data.text
+      })
+    }
   }
 }
 
@@ -113,7 +122,9 @@ var app = new Vue({
     userId: localStorage.getItem('user_id') || '',
     connecting: false,
     ready: false,
+    showChat: false,
     peers: [],
+
     muted: false,
     hidden: false,
     sharingScreen: false,
