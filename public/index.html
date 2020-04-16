@@ -160,13 +160,13 @@
         <div @click.self="hide" class="chat-menu-bg">
           <div class="menu chat-menu-body mx-auto">
             <div class="container-fluid d-flex flex-column h-100 p-0">
-              <div class="d-flex justify-content-between align-items-center border-secondary border-bottom pt-2 pb-1 px-3">
+              <div class="flex-shrink-0 d-flex justify-content-between align-items-center border-secondary border-bottom py-2 px-3">
                 <h3 class="modal-title">Chat</h3>
                 <button @click="hide" class="close">
                   &times;
                 </button>
               </div>
-              <div class="flex-grow-1 overflow-auto px-3">
+              <div id="messages" class="flex-grow-1 overflow-auto px-3">
                 <div v-for="message in messages" class="py-2">
                   <div class="small">
                     From {{ message.from }} to {{ message.to }}
@@ -180,13 +180,13 @@
                     <input v-model="message" class="form-control" placeholder="Message">
                   </div>
                   <div class="btn-group dropup">
-                    <button class="btn btn-primary d-inline-flex align-items-center" :disabled="!message || peers.length === 0">
+                    <button class="btn btn-primary d-inline-flex align-items-center" :disabled="!message || !canSendMessage">
                       <i class="ri-chat-upload-fill pr-2"></i>
                       <div class="text-truncate" :title="selectedPeer" style="height: 1.5em; max-width: 100px;">
                         {{ selectedPeer }}
                       </div>
                     </button>
-                    <button type="button" :disabled="peers.length === 0" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
+                    <button type="button" :disabled="!canSendMessage" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                     <div class="dropdown-menu overflow-auto">
                       <button v-for="option in peersPlusEveryone" type="button" @click="selectedPeer = option" class="dropdown-item" :class="{ 'active': option === selectedPeer }" >
                         {{ option }}

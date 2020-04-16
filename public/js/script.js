@@ -103,11 +103,14 @@ function setUpChannel(channel, peerName) {
     
     if (data.hasOwnProperty('from') && data.hasOwnProperty('to') && data.hasOwnProperty('text')) {
       if (data.to === app.userId) data.to = 'You'
+      const commit = scrollMessages()
+
       messages.push({
         from: data.from,
         to: data.to,
         text: data.text
       })
+      commit()
     }
   }
 }

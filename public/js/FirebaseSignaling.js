@@ -108,6 +108,7 @@ class FirebaseSignaling {
   }
 
   sendData(peerId, data) {
+    console.log('sending', decodeURIComponent(atob(peerId)), data)
     const userRef = this.usersRef.child(peerId)
     return userRef.child(this.userId).set(data)
   }
