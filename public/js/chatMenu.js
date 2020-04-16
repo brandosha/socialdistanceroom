@@ -67,7 +67,8 @@ Vue.component('chat-menu', {
   },
   watch: {
     peers: function() {
-      if (this.selectedPeer === null && this.peers.length > 0) this.selectedPeer = this.peers[0].name
+      if (this.peers.includes(this.selectedPeer)) return
+      this.selectedPeer = 'Everyone'
     }
   },
   template: $('chat-menu-template').html()
