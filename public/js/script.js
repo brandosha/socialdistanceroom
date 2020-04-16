@@ -386,3 +386,5 @@ setInterval(function() {
     app.peers[lastIndex].speaking = true
   }
 }, 100)
+
+$('#loader').hide()
