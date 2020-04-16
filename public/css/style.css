@@ -58,8 +58,8 @@
   top: 0;
   left: 0;
 
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
 
   z-index: 1041;
   background-color: rgba(0, 0, 0, 0.4);
@@ -72,9 +72,6 @@
 @media (min-width: 576px) {
   .chat-menu-body {
     border-radius: 6px;
-
-    margin-top: 10vh;
-    height: 80vh;
     width: 500px;
   }
 }
