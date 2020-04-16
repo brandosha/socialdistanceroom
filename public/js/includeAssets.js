@@ -1,18 +1,26 @@
-function includeAsset(name, type) {
-  let newEl
+/**
+ * @param { 'js' | 'css' } type 
+ */
+function includeAssets(type) {
   if (type === 'js') {
-    newEl = document.createElement('script')
-    newEl.src = '/js/' + name + '.js?v=' + assets.version
+    function includeNext(index) {
+      const name = assets.js[index]
+      if (!name) return
+      newEl = document.createElement('script')
+      newEl.src = '/js/' + name + '.js?v=' + assets.version
+      newEl.onload = () => includeNext(index + 1)
+      document.head.appendChild(newEl)
+    }
+    includeNext(0)
   } else if (type === 'css') {
-    newEl = document.createElement('link')
-    newEl.rel = 'stylesheet'
-    newEl.href = '/css/' + name + '.css?v=' + assets.version
+    assets.css.forEach(name => {
+      const newEl = document.createElement('link')
+      newEl.rel = 'stylesheet'
+      newEl.href = '/css/' + name + '.css?v=' + assets.version
+      document.head.appendChild(newEl)
+    })
   }
-
-  if (newEl) document.head.appendChild(newEl)
 }
 
-assets.css.forEach(name => includeAsset(name, 'css'))
-window.onload = function() {
-  assets.js.forEach(name => includeAsset(name, 'js'))
-}
+includeAssets('css')
+window.addEventListener('DOMContentLoaded', () => includeAssets('js'))
