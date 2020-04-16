@@ -53,6 +53,17 @@
   background: rgba(128, 128, 128, 0.35);
 }
 
+.full-screen-peer {
+  position: fixed;
+  top: 27px;
+  left: 0;
+
+  height: calc(100% - 83px);
+  width: 100%;
+  padding: 0!important;
+}
+.full-screen-peer > div { border-style: none!important; }
+
 .chat-menu-bg {
   position: fixed;
   top: 0;

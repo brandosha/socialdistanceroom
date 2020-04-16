@@ -62,6 +62,7 @@ function createPeer(peerName, incoming) {
 
   app.peers.push({
     name: peerName,
+    safeId: safeId,
     muted: true,
     hidden: true,
     speaking: false,
@@ -118,6 +119,7 @@ function setUpChannel(channel, peerName) {
 /** @type { FirebaseSignaling } */
 var signaling
 
+console.log($('chat-menu-template').html())
 var app = new Vue({
   el: '#app',
   data: {
@@ -127,6 +129,9 @@ var app = new Vue({
     ready: false,
     showChat: false,
     peers: [],
+
+    speakerFullScreen: false,
+    fullScreenPeerIndex: 0,
 
     muted: false,
     hidden: false,
@@ -166,11 +171,7 @@ var app = new Vue({
 
       signaling.onready = () => {
         this.ready = true
-        this.$nextTick(() => {
-          let stream = new MediaStream()
-          stream.addTrack(outgoingTracks.video)
-          $('#video-' + encodeForId(this.userId))[0].srcObject = stream
-        })
+        this.$nextTick(this.setVideoSources)
 
         history.replaceState(null, null, '/' + encodeURIComponent(this.roomId))
         let roomName = this.roomId
@@ -213,9 +214,22 @@ var app = new Vue({
       this.roomId = randomString(2)
     },
     setVideoSources: function() {
+      const videoEl = $('#video-' + encodeForId(this.userId))[0]
+      if (videoEl) {
+        let stream = new MediaStream()
+        stream.addTrack(outgoingTracks.video)
+        videoEl.srcObject = stream
+      }
+      
+
       this.peers.forEach(peer => {
         var peerConnection = peerConnections[peer.name]
-        if (peerConnection.stream) $('#video-' + peer.safeId)[0].srcObject = peerConnection.stream
+        console.log(peer.name, peer.safeId, peerConnection)
+        if (peerConnection.stream) {
+          const videoEl = $('#video-' + peer.safeId)[0]
+          console.log(videoEl)
+          if (videoEl) videoEl.srcObject = peerConnection.stream
+        }
       })
     },
     updatePeer(name, key, value) {
@@ -274,6 +288,10 @@ var app = new Vue({
         }))
       }
     },
+    toggleFullScreen: function() {
+      this.speakerFullScreen = !this.speakerFullScreen
+      this.$nextTick(this.setVideoSources)
+    },
     toggleHide: function() {
       const hidden = !this.hidden
       outgoingTracks.video.enabled = !hidden
@@ -330,22 +348,41 @@ var app = new Vue({
         "col-lg-4": connected > 1,
         "col-xl-3": connected > 2
       }
+    },
+    me: function() {
+      return {
+        name: this.userId,
+        muted: this.muted,
+        hidden: this.hidden,
+        sharingScreen: this.sharingScreen
+      }
     }
   }
 })
 
 setInterval(function() {
+  let lastIndex = -1
+
   let loudestIndex = -1
-  let loudestVolume = -1
+  let loudestVolume = 300
   app.peers.forEach((peer, index) => {
+    if (app.peers[index].speaking) lastIndex = index
     app.peers[index].speaking = false
     if (peer.muted || !peerConnections[peer.name].volume) return
     const volume = peerConnections[peer.name].volume.getVolume()
     if (volume > loudestVolume) {
-      loudestVolume = volume
       loudestIndex = index
+      loudestVolume = volume
     }
   })
 
-  if (loudestIndex > -1) app.peers[loudestIndex].speaking = true
+  if (loudestIndex > -1) {
+    app.peers[loudestIndex].speaking = true
+    if (app.speakerFullScreen && app.fullScreenPeerIndex !== loudestIndex) {
+      app.fullScreenPeerIndex = loudestIndex
+      app.$nextTick(app.setVideoSources)
+    }
+  } else if (lastIndex > -1) {
+    app.peers[lastIndex].speaking = true
+  }
 }, 100)

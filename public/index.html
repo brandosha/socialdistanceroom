@@ -96,6 +96,12 @@
               <i class="ri-computer-line ri-lg"></i>
             </button>
           </div>
+          <div>
+            <button @click="toggleFullScreen" class="btn btn-sm pb-0">
+              <i v-if="speakerFullScreen" class="ri-fullscreen-exit-fill ri-lg"></i>
+              <i v-else class="ri-fullscreen-fill ri-lg"></i>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -132,10 +138,14 @@
           </div>
         </div>
       </div>
-
-      <div v-if="ready" class="rtc-videos form-row justify-content-around">
-        <rtc-video :class="widthClasses" :peer="{ name: userId, muted: muted, hidden: hidden, sharingScreen: sharingScreen }"></rtc-video>
-        <rtc-video v-for="peer in peers" :class="widthClasses" :peer="peer"></rtc-video>
+      
+      <div v-if="ready">
+        <rtc-video v-if="speakerFullScreen" class="full-screen-peer" :peer="peers.length > 0 ? peers[fullScreenPeerIndex] : me"></rtc-video>
+        <div v-else class="rtc-videos form-row justify-content-around">
+          <rtc-video :class="widthClasses" :peer="me"></rtc-video>
+          <rtc-video v-for="peer in peers" :class="widthClasses" :peer="peer"></rtc-video>
+        </div>
+        
         <rtc-video-template>
           <div class="py-1 rtc-video">
             <div class="border-primary" :class="{ 'speaking': peer.speaking, 'hidden': peer.hidden }">
