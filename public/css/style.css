@@ -55,10 +55,10 @@
 
 .full-screen-peer {
   position: fixed;
-  top: 27px;
+  top: 30px;
   left: 0;
 
-  height: calc(100% - 83px);
+  height: calc(100% - 85px);
   width: 100%;
   padding: 0!important;
 }

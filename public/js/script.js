@@ -24,7 +24,7 @@ function createPeer(peerName, incoming) {
     offerToReceiveAudio: true,
     offerToReceiveVideo: true
   })
-  peer.onnegotiationneeded = console.log
+  peer.onnegotiationneeded = true
 
   let channel = null
   if (incoming) {
@@ -116,10 +116,12 @@ function setUpChannel(channel, peerName) {
   }
 }
 
+const joinModalTemplate = $('join-modal-template').html()
+$('join-modal-template').remove()
+
 /** @type { FirebaseSignaling } */
 var signaling
 
-console.log($('chat-menu-template').html())
 var app = new Vue({
   el: '#app',
   data: {
@@ -129,6 +131,12 @@ var app = new Vue({
     ready: false,
     showChat: false,
     peers: [],
+
+    modal: {
+      title: '',
+      body: '',
+      buttons: []
+    },
 
     speakerFullScreen: false,
     fullScreenPeerIndex: 0,
@@ -154,7 +162,8 @@ var app = new Vue({
         const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         outgoingTracks.video = cameraStream.getVideoTracks()[0]
         outgoingTracks.audio = cameraStream.getAudioTracks()[0]
-      } catch {
+      } catch (error) {
+        console.error(error)
         this.connecting = false
         return
       }
@@ -162,11 +171,85 @@ var app = new Vue({
       signaling = new FirebaseSignaling(this.userId, this.roomId.toLowerCase())
 
       signaling.onroomcreate = () => {
-        if (confirm('The room "' + roomId + '" doesn\'t exist. Would you like to create it?')) {
-          return true
-        }
-        this.disconnect()
-        return false
+        return new Promise(resolve => {
+          const modalEl = $('#modal')
+
+          this.modal.title = 'Create Room'
+          this.modal.body = 'The room "' + roomId + '" doesn\'t exist. Would you like to create it?'
+          this.modal.buttons = [
+            {
+              text: 'Cancel',
+              type: 'danger',
+              onclick: function() {
+                app.disconnect()
+
+                modalEl.modal('hide')
+                resolve(false)
+              }
+            },
+            {
+              text: 'Create',
+              type: 'primary',
+              onclick: function() {
+                modalEl.modal('hide')
+                resolve(true)
+              }
+            }
+          ]
+
+          modalEl.modal('show')
+        })
+      }
+
+      signaling.onroomjoin = (peers) => {
+        return new Promise(resolve => {
+          const modalEl = $('#modal')
+
+          this.modal.title = 'Join Room'
+
+          const peersHtml = peers.map(peer => '<div class="py-1">' + peer + '</div>').join("\n")
+          this.modal.body = joinModalTemplate.replace('{{ roomId }}', roomId).replace('{{ peers }}', peersHtml)
+
+          this.modal.buttons = [
+            {
+              text: 'Cancel',
+              type: 'danger',
+              onclick: function() {
+                app.disconnect()
+
+                modalEl.modal('hide')
+                resolve(false)
+              }
+            },
+            {
+              text: 'Continue',
+              type: 'primary',
+              onclick: function() {
+                const audioCheck = $('#join-with-audio')[0]
+                const videoCheck = $('#join-with-video')[0]
+                
+                if (!audioCheck.checked) {
+                  app.muted = true
+                  outgoingTracks.audio.enabled = false
+                }
+                if (!videoCheck.checked) {
+                  app.hidden = true
+                  outgoingTracks.video.enabled = false
+                }
+
+                modalEl.one('hidden.bs.modal', () => {
+                  audioCheck.checked = true
+                  videoCheck.checked = true
+                })
+
+                modalEl.modal('hide')
+                resolve(true)
+              }
+            }
+          ]
+
+          modalEl.modal('show')
+        })
       }
 
       signaling.onready = () => {
@@ -193,17 +276,26 @@ var app = new Vue({
         this.setVideoSources()
       }
 
-      signaling.ondisconnect = () => {
-        alert('You have been disconnected from the host.')
-        this.disconnect()
-      }
-
       signaling.buildpeer = createPeer
 
       signaling.onerror = error => {
         if (error === 'nametaken') {
-          alert('The name "' + this.userId + '" has already been taken')
+          const modalEl = $('#modal')
+
+          this.modal.title = 'Name Taken'
+          this.modal.body = 'The name "' + userId + '" has already been taken'
+          this.modal.buttons = [
+            {
+              text: 'Okay',
+              type: 'primary',
+              onclick: function() { modalEl.modal('hide') }
+            }
+          ]
+
+          modalEl.modal('show')
         }
+        this.disconnect()
+        this.roomId = roomId
       }
 
       await signaling.start()
@@ -220,14 +312,11 @@ var app = new Vue({
         stream.addTrack(outgoingTracks.video)
         videoEl.srcObject = stream
       }
-      
 
       this.peers.forEach(peer => {
         var peerConnection = peerConnections[peer.name]
-        console.log(peer.name, peer.safeId, peerConnection)
         if (peerConnection.stream) {
           const videoEl = $('#video-' + peer.safeId)[0]
-          console.log(videoEl)
           if (videoEl) videoEl.srcObject = peerConnection.stream
         }
       })
@@ -320,6 +409,7 @@ var app = new Vue({
       this.muted = false
       this.hidden = false
       this.sharingScreen = false
+      this.speakerFullScreen = false
       
       this.roomId = ''
       history.replaceState(null, null, '/')

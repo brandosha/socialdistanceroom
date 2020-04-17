@@ -31,8 +31,6 @@ Vue.component('chat-menu', {
       const message = this.message
       this.message = ''
 
-      console.log(this.selectedPeer, message)
-
       const messageData = {
         from: app.userId,
         to: this.selectedPeer,

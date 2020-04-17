@@ -66,7 +66,7 @@
       </form>
 
       <div v-if="ready" class="menu fixed-top container-fluid">
-        <div class="d-flex justify-content-between">
+        <div class="d-flex justify-content-between" style="padding-top: 3px;">
           <div>
             <div class="dropdown" title="Info">
               <button class="btn btn-sm pb-0" data-toggle="dropdown">
@@ -207,6 +207,41 @@
           </div>
         </div>
       </chat-menu-template>
+
+      <div class="modal fade" id="modal" data-backdrop="static">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">
+                {{ modal.title }}
+              </h5>
+            </div>
+            <div class="modal-body" v-html="modal.body"></div>
+            <div class="modal-footer">
+              <button v-for="button in modal.buttons" @click="button.onclick" class="btn" :class="'btn-' + button.type">
+                {{ button.text }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <join-modal-template>
+        <div class="mb-3">You are about to join the room "{{ roomId }}"</div>
+        <div class="form-check">
+          <input class="form-check-input" id="join-with-audio" type="checkbox" checked>
+          <label class="form-check-label" for="join-with-audio">Join with audio</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" id="join-with-video" type="checkbox" checked>
+          <label class="form-check-label" for="join-with-video">Join with video</label>
+        </div>
+        <button class="btn btn-outline-secondary my-3" data-toggle="collapse" data-target="#participants-collapse">Show Participants</button>
+        <div class="collapse" id="participants-collapse">
+          <div class="card card-body py-1">
+            {{ peers }}
+          </div>
+        </div>
+      </join-modal-template>
     </div>
     <div id="loader" class="full-page-container">
       <div class="loader-container">

@@ -17,10 +17,17 @@ class FirebaseSignaling {
     this.onready
     /**
      * @callback RoomCreateCallback
-     * @returns { boolean } cancel
+     * @returns { boolean | Promise<boolean> } cancel
      */
     /** @type { RoomCreateCallback | boolean } */
     this.onroomcreate = false
+    /**
+     * @callback RoomJoinCallback
+     * @param { string[] } peers
+     * @returns { boolean | Promise<boolean> } cancel
+     */
+    /** @type { RoomJoinCallback | boolean } */
+    this.onroomjoin = true
     /**
      * @callback PeerCreateCallback
      * @param { string } peerName
@@ -31,8 +38,6 @@ class FirebaseSignaling {
     this.buildpeer
     /** @type { (name: string) => void } */
     this.onpeerdisconnnect
-    /** @type { () => void } */
-    this.ondisconnect
 
     /** @type { Object<string, RTCPeerConnection> } */
     this.peers = { }
@@ -46,6 +51,7 @@ class FirebaseSignaling {
     this._peers = { }
 
     this._started = false
+    this._joined = false
     this.watchPresence()
   }
 
@@ -77,7 +83,8 @@ class FirebaseSignaling {
 
     const roomSnap = await roomRef.once('value')
     if (!roomSnap.exists()) {
-      if (!this.onroomcreate || !this.onroomcreate()) return
+      if (!this.onroomcreate || !(await this.onroomcreate())) return
+      this._joined = true
     }
 
     const userSnap = await myPeerRef.once('value')
@@ -90,15 +97,18 @@ class FirebaseSignaling {
     userRef.set({ active: true })
 
     await this.join()
-    if (this.onready) this.onready()
+    if (this._joined && this.onready) this.onready()
   }
 
   async join() {
     const peersSnap = await this.roomRef.child('peers').once('value')
     if (peersSnap.exists()) {
       const peerIds = Object.keys(peersSnap.val())
+      const peerNames = peerIds.map(id => decodeURIComponent(atob(id)))
+      if (!this.onroomjoin || !(await this.onroomjoin(peerNames))) return
+      this._joined = true
       peerIds.forEach(this.makeSignalingConnection.bind(this))
-    } 
+    }
 
     await this.myPeerRef.onDisconnect().remove()
     await this.myPeerRef.set(true)
@@ -108,7 +118,6 @@ class FirebaseSignaling {
   }
 
   sendData(peerId, data) {
-    console.log('sending', decodeURIComponent(atob(peerId)), data)
     const userRef = this.usersRef.child(peerId)
     return userRef.child(this.userId).set(data)
   }
@@ -188,7 +197,6 @@ class FirebaseSignaling {
     this.roomRef.child('peers').on('child_removed', snap => {
       const peerName = decodeURIComponent(atob(snap.key))
       if (this.onpeerdisconnnect) this.onpeerdisconnnect(peerName)
-      console.log(peerName + ' disconnected')
 
       this._peers[peerName].connection.close()
       delete this._peers[peerName]
@@ -220,7 +228,6 @@ class FirebaseSignaling {
   setUpPeerSignalingConnection(rtc, peerName) {
     let restartingIce = false
     rtc.onconnectionstatechange = async () => {
-      console.log(peerName, rtc.connectionState, peerName > this.name)
       if (rtc.connectionState === 'failed' && peerName > this.name) {
         restartingIce = true
 
@@ -234,8 +241,6 @@ class FirebaseSignaling {
           type: 'offer'
         })
       } else if (restartingIce && rtc.connectionState === 'connected') {
-        console.log(peerName, 'reconnected signaling')
-
         const peer = this.peers[peerName]
         const offer = await peer.createOffer({ iceRestart: true })
         await peer.setLocalDescription(offer)
@@ -261,7 +266,6 @@ class FirebaseSignaling {
       catch { return console.error('Enable to parse message', message) }
 
       if (!message.data || !message.type) return
-      console.log(peerName, message.type, message.data)
       
       if (message.type === 'offer') {
         const rtc = this.buildpeer(peerName, true)
@@ -290,6 +294,8 @@ class FirebaseSignaling {
   }
 
   async end(internal) {
+    if (!this._joined) return
+
     this.userRef.off()
     this.roomRef.child('peers').off()
     this.myPeerRef.onDisconnect().cancel()
@@ -298,7 +304,6 @@ class FirebaseSignaling {
     this.myPeerRef.remove()
 
     for (const peerName in this._peers) {
-      console.log(peerName)
       this._peers[peerName].connection.close()
       if (this.peers[peerName]) this.peers[peerName].close()
     }
