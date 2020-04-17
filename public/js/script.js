@@ -84,6 +84,7 @@ function setUpChannel(channel, peerName) {
     }))
   }
 
+  let displayMessageTimeout
   channel.onmessage = e => {
     let data = e.data
     try { data = JSON.parse(data) }
@@ -106,12 +107,24 @@ function setUpChannel(channel, peerName) {
       if (data.to === app.userId) data.to = 'You'
       const commit = scrollMessages()
 
-      messages.push({
+      const messageData = {
         from: data.from,
         to: data.to,
         text: data.text
-      })
+      }
+
+      messages.push(messageData)
       commit()
+
+      if (!app.showChat) {
+        app.newMessage = messageData
+        $('.notification-container').fadeIn()
+        if (displayMessageTimeout) clearTimeout(displayMessageTimeout)
+        
+        displayMessageTimeout = setTimeout(() => {
+          $('.notification-container').fadeOut()
+        }, 5000)
+      }
     }
   }
 }
@@ -136,6 +149,12 @@ var app = new Vue({
       title: '',
       body: '',
       buttons: []
+    },
+
+    newMessage: {
+      from: '',
+      to: '',
+      text: ''
     },
 
     speakerFullScreen: false,
@@ -403,6 +422,18 @@ var app = new Vue({
         }))
       }
     },
+    notificationClicked: function() {
+      this.showChat = true
+      $('.notification-container').fadeOut()
+      this.$nextTick(() => {
+        const messages = $('#messages')
+        const scrollHeight = messages.prop('scrollHeight')
+        messages.scrollTop(scrollHeight)
+      })
+    },
+    hideNotification: function() {
+      $('.notification-container').fadeOut()
+    },
     disconnect: function() {
       this.ready = false
       this.connecting = false
@@ -414,6 +445,8 @@ var app = new Vue({
       this.roomId = ''
       history.replaceState(null, null, '/')
       document.title = 'Social Distance Room'
+
+      while (messages.length > 0) messages.pop()
       
       outgoingTracks.video.stop()
       outgoingTracks.audio.stop()

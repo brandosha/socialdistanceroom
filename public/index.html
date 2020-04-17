@@ -161,6 +161,22 @@
         </rtc-video-template>
       </div>
 
+      <div class="notification-container px-4" style="display: none;">
+        <div @click="notificationClicked" class="message-notification alert d-flex">
+          <div class="text-truncate flex-grow-1">
+            <span class="mr-2">
+              <span class="font-weight-bold">{{ newMessage.from }}</span> to <span class="font-weight-bold">{{ newMessage.to }}</span>
+            </span>
+            <span class="font-weight-light">
+              {{ newMessage.text }}
+            </span>
+          </div>
+          <button @click.stop="hideNotification" class="close flex-shrink-0 ml-2">
+            &times;
+          </button>
+        </div>
+      </div>
+
       <chat-menu :class="showChat ? 'd-block' : 'd-none'" :peers="peers"></chat-menu>
       <chat-menu-template>
         <div @click.self="hide" class="chat-menu-bg py-sm-4">

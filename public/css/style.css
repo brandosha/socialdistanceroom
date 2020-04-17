@@ -1,8 +1,8 @@
-.menu { background-color: #dddddd; }
+.menu { background-color: #dddddd }
 .participant-header { color: #444444 }
 @media (prefers-color-scheme: dark) {
-  .menu { background-color: #333333; }
-  .room-name { color: #dddddd; }
+  .menu { background-color: #333333 }
+  .room-name { color: #dddddd }
   .participant-header { color: #aaaaaa }
   .participant-name { color: #dddddd }
 }
@@ -85,4 +85,19 @@
     border-radius: 6px;
     width: 500px;
   }
+}
+
+.notification-container {
+  position: fixed;
+  top: 35px;
+  left: 0;
+  
+  width: 100%;
+}
+.message-notification {
+  cursor: pointer;
+  background-color: rgba(180, 180, 180, 0.9)
+}
+@media (prefers-color-scheme: dark) {
+  .message-notification { background-color: rgba(80, 80, 80, 0.9) }
 }
