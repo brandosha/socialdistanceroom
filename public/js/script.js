@@ -334,8 +334,8 @@ var app = new Vue({
       copy.val(location.host + location.pathname)
       copy.focus()
       copy.select()
-
       document.execCommand('copy')
+      copy.blur()
     },
     refreshOutgoingVideo: function() {
       let stream = new MediaStream()
