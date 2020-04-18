@@ -16,7 +16,7 @@ Vue.component('chat-menu', {
   props: ['peers', 'myName'],
   data: function() {
     return {
-      selectedPeer: 'Everyone',
+      sendTo: 'Everyone',
       messages: messages,
       message: ''
     }
@@ -33,7 +33,7 @@ Vue.component('chat-menu', {
 
       const messageData = {
         from: app.userId,
-        to: this.selectedPeer,
+        to: this.sendTo,
         text: message
       }
       
@@ -60,13 +60,14 @@ Vue.component('chat-menu', {
       return this.peers.map(peer => peer.name).concat(['Everyone'])
     },
     canSendMessage: function() {
+      return true
       return this.peers.length > 0
     }
   },
   watch: {
     peers: function() {
-      if (this.peers.includes(this.selectedPeer)) return
-      this.selectedPeer = 'Everyone'
+      if (this.peers.includes(this.sendTo)) return
+      this.sendTo = 'Everyone'
     }
   },
   template: $('chat-menu-template').html()

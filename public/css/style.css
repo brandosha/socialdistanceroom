@@ -76,16 +76,27 @@
   background-color: rgba(0, 0, 0, 0.5);
 }
 
+.chat-animate { transition: visibility 0.2s ease-out, opacity 0.2s ease-out; }
+.chat-show {
+  visibility: visible;
+  opacity: 1;
+}
+.chat-hide {
+  visibility: hidden;
+  opacity: 0;
+}
 .chat-menu-body {
   height: 100%;
   width: 100%;
 }
+
 @media (min-width: 576px) {
   .chat-menu-body {
     border-radius: 6px;
     width: 500px;
   }
 }
+.mh-screen { max-height: 90vh; }
 
 .notification-container {
   position: fixed;
