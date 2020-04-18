@@ -1,5 +1,4 @@
 const database = firebase.database()
-const firestore = firebase.firestore()
 
 /** @type { (text: string) => string } */
 const sha1 = KJUR.crypto.Util.sha1
