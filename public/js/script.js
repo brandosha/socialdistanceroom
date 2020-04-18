@@ -376,12 +376,15 @@ var app = new Vue({
       if (sharingScreen) {
         const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true })
         const displayTrack = displayStream.getVideoTracks()[0]
+        displayTrack.onended = () => {
+          if (this.sharingScreen) this.toggleScreenShare()
+        }
 
         outgoingTracks.video.stop()
         outgoingTracks.video = displayTrack
         this.refreshOutgoingVideo()
       } else {
-        const newCameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        const newCameraStream = await navigator.mediaDevices.getUserMedia({ video: true })
         const videoTrack = newCameraStream.getVideoTracks()[0]
 
         outgoingTracks.video.stop()
