@@ -60,7 +60,6 @@ Vue.component('chat-menu', {
       return this.peers.map(peer => peer.name).concat(['Everyone'])
     },
     canSendMessage: function() {
-      return true
       return this.peers.length > 0
     }
   },
