@@ -301,7 +301,9 @@ class FirebaseSignaling {
 
     this.userRef.off()
     this.roomRef.child('peers').off()
+    
     this.myPeerRef.onDisconnect().cancel()
+    this.userRef.onDisconnect().cancel()
 
     this.userRef.remove()
     this.myPeerRef.remove()
