@@ -178,7 +178,10 @@ var app = new Vue({
       localStorage.setItem('room_id', roomId)
 
       try {
-        const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        const cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: true, 
+          audio: { echoCancellation: true }
+        })
         outgoingTracks.video = cameraStream.getVideoTracks()[0]
         outgoingTracks.audio = cameraStream.getAudioTracks()[0]
       } catch (error) {

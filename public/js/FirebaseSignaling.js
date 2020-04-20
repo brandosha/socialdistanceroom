@@ -103,10 +103,13 @@ class FirebaseSignaling {
   async join() {
     const peersSnap = await this.roomRef.child('peers').once('value')
     if (peersSnap.exists()) {
-      const peerIds = Object.keys(peersSnap.val())
+      let peerIds = Object.keys(peersSnap.val())
       const peerNames = peerIds.map(id => decodeURIComponent(atob(id)))
       if (!this.onroomjoin || !(await this.onroomjoin(peerNames))) return
       this._joined = true
+
+      const snapNow = await this.roomRef.child('peers').once('value')
+      peerIds = Object.keys(snapNow.val())
       peerIds.forEach(this.makeSignalingConnection.bind(this))
     }
 
