@@ -1,5 +1,5 @@
 var assets = {
-  version: '0.3.10-beta',
+  version: '0.3.11-beta',
   css:['dark','style'],
-  js:['utils','rtcVideo','chatMenu','StreamVolume','FirebaseSignaling','script']
+  js:['utils','joinModal','rtcVideo','chatMenu','StreamVolume','FirebaseSignaling','script']
 }

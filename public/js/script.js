@@ -129,9 +129,6 @@ function setUpChannel(channel, peerName) {
   }
 }
 
-const joinModalTemplate = $('join-modal-template').html()
-$('join-modal-template').remove()
-
 /** @type { FirebaseSignaling } */
 var signaling
 
@@ -148,7 +145,10 @@ var app = new Vue({
     modal: {
       title: '',
       body: '',
-      buttons: []
+      buttons: [],
+
+      join: false,
+      peers: []
     },
 
     newMessage: {
@@ -218,6 +218,7 @@ var app = new Vue({
               }
             }
           ]
+          this.modal.join = false
 
           modalEl.modal('show')
         })
@@ -229,9 +230,7 @@ var app = new Vue({
 
           this.modal.title = 'Join Room'
 
-          const peersHtml = peers.map(peer => '<div class="py-1">' + peer + '</div>').join("\n")
-          this.modal.body = joinModalTemplate.replace('{{ roomId }}', roomId).replace('{{ peers }}', peersHtml)
-
+          this.modal.body = ''
           this.modal.buttons = [
             {
               text: 'Cancel',
@@ -269,6 +268,8 @@ var app = new Vue({
               }
             }
           ]
+          this.modal.join = true
+          this.modal.peers = peers
 
           modalEl.modal('show')
         })
@@ -313,6 +314,7 @@ var app = new Vue({
               onclick: function() { modalEl.modal('hide') }
             }
           ]
+          this.modal.join = false
 
           modalEl.modal('show')
         }

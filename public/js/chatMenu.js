@@ -68,7 +68,5 @@ Vue.component('chat-menu', {
       if (this.peers.includes(this.sendTo)) return
       this.sendTo = 'Everyone'
     }
-  },
-  template: $('chat-menu-template').html()
+  }
 })
-$('chat-menu-template').remove()
