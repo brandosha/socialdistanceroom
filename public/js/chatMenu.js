@@ -28,13 +28,65 @@ Vue.component('chat-menu', {
     sendMessage: function() {
       if (!this.message || !this.canSendMessage) return
 
-      const message = this.message
+      let message = this.message
       this.message = ''
+
+      const commands = [
+        {
+          trigger: 'roll',
+          action: function(options) {
+            options = options.trim()
+            let sides = 6
+            let count = 1
+          
+            if (options.length > 0) {
+              const toNum = parseInt(options)
+              if (!isNaN(toNum) && toNum.toString() === options) {
+                sides = toNum
+              } else if (options.includes('d')) {
+                const split = options.split('d')
+                if (split.length !== 2) return message
+                
+                const dcount = parseInt(split[0])
+                const dsides = parseInt(split[1])
+                if (isNaN(dcount) || isNaN(dsides)) return message
+          
+                count = dcount
+                sides = dsides
+              } else {
+                return message
+              }
+            }
+          
+            const results = Array(count).fill(0).map(() => Math.ceil(Math.random() * sides))
+            
+            let total = ''
+            if (count === 1) count = 'a '
+            else total = ' for a total of ' + results.reduce((prev, curr) => prev + curr, 0)
+          
+            return 'Rolled ' + count + 'd' + sides + ' and got ' + results.join(', ') + total
+          }
+        }
+      ]
+
+      const command = commands.some(command => {
+        const triggerLength = command.trigger.length + 1
+        if (
+          message.length >= triggerLength && 
+          message.slice(0, triggerLength) === '/' + command.trigger
+        ) {
+          console.log(message, command.trigger)
+          message = command.action(message.slice(triggerLength))
+          console.log(message)
+          return true
+        }
+      })
 
       const messageData = {
         from: app.userId,
         to: this.sendTo,
-        text: message
+        text: message,
+        command: command
       }
       
       if (messageData.to === 'Everyone') {
@@ -70,3 +122,37 @@ Vue.component('chat-menu', {
     }
   }
 })
+
+
+function rollDice(options) {
+  options = options.trim()
+  let sides = 6
+  let count = 1
+
+  if (options.length > 0) {
+    const toNum = parseInt(options)
+    if (!isNaN(toNum) && toNum.toString() === options) {
+      sides = toNum
+    } else if (options.includes('d')) {
+      const split = options.split('d')
+      if (split.length !== 2) return message
+      
+      const dcount = parseInt(split[0])
+      const dsides = parseInt(split[1])
+      if (isNaN(dcount) || isNaN(dsides)) return message
+
+      count = dcount
+      sides = dsides
+    } else {
+      return message
+    }
+  }
+
+  const results = Array(count).fill(0).map(() => Math.ceil(Math.random() * sides))
+  
+  let total = ''
+  if (count === 1) count = 'a '
+  else total = ' for a total of ' + results.reduce((prev, curr) => prev + curr, 0)
+
+  return 'Rolled ' + count + 'd' + sides + ' and got ' + results.join(', ') + total
+}

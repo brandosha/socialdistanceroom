@@ -110,7 +110,8 @@ function setUpChannel(channel, peerName) {
       const messageData = {
         from: data.from,
         to: data.to,
-        text: data.text
+        text: data.text,
+        command: data.command
       }
 
       messages.push(messageData)
@@ -154,7 +155,8 @@ var app = new Vue({
     newMessage: {
       from: '',
       to: '',
-      text: ''
+      text: '',
+      command: false
     },
 
     speakerFullScreen: false,

@@ -163,8 +163,11 @@
       <div class="notification-container px-4" style="display: none;">
         <div @click="notificationClicked" class="message-notification alert d-flex">
           <div class="text-truncate flex-grow-1">
-            <span class="mr-2">
-              <span class="font-weight-bold">{{ newMessage.from }}</span> to <span class="font-weight-bold">{{ newMessage.to }}</span>
+            <span class="mr-1 d-inline-flex align-items-center">
+              <div>
+                <span class="font-weight-bold">{{ newMessage.from }}</span> to <span class="font-weight-bold">{{ newMessage.to }}</span>
+              </div>
+              <i v-if="newMessage.command" class="ml-1 ri-command-fill"></i>
             </span>
             <span class="font-weight-light">
               {{ newMessage.text }}
@@ -188,8 +191,8 @@
               </div>
               <div id="messages" class="flex-grow-1 overflow-auto px-3">
                 <div v-for="message in messages" class="py-2">
-                  <div class="small">
-                    From {{ message.from }} to {{ message.to }}
+                  <div class="small d-flex align-items-center">
+                    From {{ message.from }} to {{ message.to }} <i v-if="message.command" class="ml-1 ri-command-fill"></i>
                   </div>
                   {{ message.text }}
                 </div>
@@ -209,6 +212,9 @@
                       </button>
                       <button type="button" :disabled="!canSendMessage" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                       <div class="dropdown-menu overflow-auto mh-screen">
+                        <!-- <button class="dropdown-item d-inline-flex align-items-center">
+                          <i class="ri-group-fill mr-1"></i> Manage groups...
+                        </button> -->
                         <button v-for="option in peersPlusEveryone" @click="sendTo = option" class="dropdown-item" :class="{ 'active': option === sendTo }" type="button">
                           {{ option }}
                         </button>
