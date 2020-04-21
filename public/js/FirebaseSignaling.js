@@ -94,7 +94,7 @@ class FirebaseSignaling {
     }
 
     await userRef.onDisconnect().remove()
-    userRef.set({ active: true })
+    userRef.remove()
 
     await this.join()
     if (this._joined && this.onready) this.onready()
@@ -155,7 +155,6 @@ class FirebaseSignaling {
   watchIncomingConnections() {
     this.userRef.on('child_added', async snap => {
       await this.userRef.child(snap.key).remove()
-      if (snap.key === 'active') return
 
       const peerId = snap.key
       const message = snap.val()
@@ -231,6 +230,7 @@ class FirebaseSignaling {
   setUpPeerSignalingConnection(rtc, peerName) {
     let restartingIce = false
     rtc.onconnectionstatechange = async () => {
+      console.log(peerName + ' connection state changed', rtc.connectionState, rtc)
       if (rtc.connectionState === 'failed' && peerName > this.name) {
         restartingIce = true
 
@@ -266,7 +266,7 @@ class FirebaseSignaling {
     channel.onmessage = async e => {
       let message = e.data
       try { message = JSON.parse(message) }
-      catch { return console.error('Enable to parse message', message) }
+      catch { return console.error('Unable to parse message', message) }
 
       if (!message.data || !message.type) return
       
@@ -301,7 +301,7 @@ class FirebaseSignaling {
 
     this.userRef.off()
     this.roomRef.child('peers').off()
-    
+
     this.myPeerRef.onDisconnect().cancel()
     this.userRef.onDisconnect().cancel()
 

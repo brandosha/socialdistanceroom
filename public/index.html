@@ -163,8 +163,11 @@
       <div class="notification-container px-4" style="display: none;">
         <div @click="notificationClicked" class="message-notification alert d-flex">
           <div class="text-truncate flex-grow-1">
-            <span class="mr-2">
-              <span class="font-weight-bold">{{ newMessage.from }}</span> to <span class="font-weight-bold">{{ newMessage.to }}</span>
+            <span class="mr-1 d-inline-flex align-items-center">
+              <div>
+                <span class="font-weight-bold">{{ newMessage.from }}</span> to <span class="font-weight-bold">{{ newMessage.to }}</span>
+              </div>
+              <i v-if="newMessage.command" class="ml-1 ri-command-fill"></i>
             </span>
             <span class="font-weight-light">
               {{ newMessage.text }}
@@ -176,8 +179,7 @@
         </div>
       </div>
 
-      <chat-menu class="chat-animate" :class="showChat ? 'chat-show' : 'chat-hide'" :peers="peers"></chat-menu>
-      <chat-menu-template>
+      <chat-menu class="chat-animate" :class="showChat ? 'chat-show' : 'chat-hide'" :peers="peers" inline-template>
         <div @click.self="hide" class="chat-menu-bg py-sm-4">
           <div class="menu chat-menu-body mx-auto">
             <div class="container-fluid d-flex flex-column h-100 p-0">
@@ -189,8 +191,8 @@
               </div>
               <div id="messages" class="flex-grow-1 overflow-auto px-3">
                 <div v-for="message in messages" class="py-2">
-                  <div class="small">
-                    From {{ message.from }} to {{ message.to }}
+                  <div class="small d-flex align-items-center">
+                    From {{ message.from }} to {{ message.to }} <i v-if="message.command" class="ml-1 ri-command-fill"></i>
                   </div>
                   {{ message.text }}
                 </div>
@@ -210,6 +212,9 @@
                       </button>
                       <button type="button" :disabled="!canSendMessage" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                       <div class="dropdown-menu overflow-auto mh-screen">
+                        <!-- <button class="dropdown-item d-inline-flex align-items-center">
+                          <i class="ri-group-fill mr-1"></i> Manage groups...
+                        </button> -->
                         <button v-for="option in peersPlusEveryone" @click="sendTo = option" class="dropdown-item" :class="{ 'active': option === sendTo }" type="button">
                           {{ option }}
                         </button>
@@ -221,7 +226,7 @@
             </div>
           </div>
         </div>
-      </chat-menu-template>
+      </chat-menu>
 
       <div class="modal fade" id="modal" data-backdrop="static">
         <div class="modal-dialog">
@@ -231,7 +236,32 @@
                 {{ modal.title }}
               </h5>
             </div>
-            <div class="modal-body" v-html="modal.body"></div>
+            <div class="modal-body">
+              <join-modal-body v-if="modal.join" :room="roomId" :peers="modal.peers" inline-template>
+                <div>
+                  <div class="mb-3">You are about to join the room "{{ roomId }}"</div>
+                  <div class="form-check">
+                    <input class="form-check-input" id="join-with-audio" type="checkbox" checked>
+                    <label class="form-check-label" for="join-with-audio">Join with audio</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" id="join-with-video" type="checkbox" checked>
+                    <label class="form-check-label" for="join-with-video">Join with video</label>
+                  </div>
+                  <button class="btn btn-outline-secondary my-3" data-toggle="collapse" data-target="#participants-collapse">Show Participants</button>
+                  <div class="collapse" id="participants-collapse">
+                    <div class="card card-body py-1">
+                      <div v-for="peer in peers" class="py-1">
+                        {{ peer }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </join-modal-body>
+              <div v-else>
+                {{ modal.body }}
+              </div>
+            </div>
             <div class="modal-footer">
               <button v-for="button in modal.buttons" @click="button.onclick" class="btn" :class="'btn-' + button.type">
                 {{ button.text }}
@@ -240,23 +270,6 @@
           </div>
         </div>
       </div>
-      <join-modal-template>
-        <div class="mb-3">You are about to join the room "{{ roomId }}"</div>
-        <div class="form-check">
-          <input class="form-check-input" id="join-with-audio" type="checkbox" checked>
-          <label class="form-check-label" for="join-with-audio">Join with audio</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input" id="join-with-video" type="checkbox" checked>
-          <label class="form-check-label" for="join-with-video">Join with video</label>
-        </div>
-        <button class="btn btn-outline-secondary my-3" data-toggle="collapse" data-target="#participants-collapse">Show Participants</button>
-        <div class="collapse" id="participants-collapse">
-          <div class="card card-body py-1">
-            {{ peers }}
-          </div>
-        </div>
-      </join-modal-template>
     </div>
     <div id="loader" class="full-page-container">
       <div class="loader-container">
