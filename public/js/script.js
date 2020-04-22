@@ -475,11 +475,19 @@ var app = new Vue({
     },
     widthClasses: function() {
       const connected = this.peers.length
-      return {
-        "col-12": true,
-        "col-md-6": connected > 0,
-        "col-lg-4": connected > 1,
-        "col-xl-3": connected > 2
+
+      if (this.showChat) {
+        return {
+          "col-12": true,
+          "col-xl-6": connected > 0
+        }
+      } else {
+        return {
+          "col-12": true,
+          "col-md-6": connected > 0,
+          "col-lg-4": connected > 1,
+          "col-xl-3": connected > 2
+        }
       }
     },
     me: function() {

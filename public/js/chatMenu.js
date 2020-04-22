@@ -46,7 +46,6 @@ Vue.component('chat-menu', {
               } else if (options.includes('d')) {
                 const split = options.split('d')
                 if (split.length !== 2) return message
-                console.log(split)
                 
                 let dcount = 1
                 if (split[0]) dcount = parseInt(split[0])
