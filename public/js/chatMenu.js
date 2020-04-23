@@ -13,12 +13,14 @@ function scrollMessages() {
 }
 
 Vue.component('chat-menu', {
-  props: ['peers', 'myName'],
+  props: ['peers', 'groups'],
   data: function() {
     return {
       sendTo: 'Everyone',
       messages: messages,
-      message: ''
+      message: '',
+
+      linkClasses: 'btn-link cursor-pointer'
     }
   },
   methods: {
@@ -88,14 +90,27 @@ Vue.component('chat-menu', {
         command: command
       }
       
+      let toGroup
       if (messageData.to === 'Everyone') {
         for (const peerName in peerConnections) {
           const channel = peerConnections[peerName].channel
-          channel.send(JSON.stringify(messageData))
+          channel.send(JSON.stringify({ message: messageData }))
         }
-      } else {
+      } else if (peerConnections[messageData.to]) {
         const channel = peerConnections[messageData.to].channel
-        channel.send(JSON.stringify(messageData))
+        channel.send(JSON.stringify({ message: messageData}))
+      } else if (this.groups.some(group => {
+        if (group.name === messageData.to) {
+          toGroup = group
+          return true
+        }
+      })) {
+        toGroup.members.forEach(peer => {
+          if (peer.isMember) {
+            const channel = peerConnections[peer.name].channel
+            channel.send(JSON.stringify({ message: messageData }))
+          }
+        })
       }
 
       messageData.from = 'You'
@@ -104,11 +119,38 @@ Vue.component('chat-menu', {
       const messagesEl = $('#messages')
       const scrollHeight = messagesEl.prop('scrollHeight')
       messagesEl.animate({ scrollTop: scrollHeight }, 500)
+    },
+    handleGroups: function() {
+      const modalEl = $('#modal')
+
+      app.modal.title = 'Groups'
+      app.modal.join = false
+      app.modal.groups = true
+      app.modal.buttons = [
+        {
+          text: 'Done',
+          type: 'primary',
+          onclick: function() {
+            groupModalDoneHandler()
+            modalEl.modal('hide')
+          }
+        }
+      ]
+
+      modalEl.modal('show')
+    },
+    chatWith: function(peerOrGroup) {
+      if (this.linkable[peerOrGroup]) this.sendTo = peerOrGroup
     }
   },
   computed: {
-    peersPlusEveryone: function() {
-      return this.peers.map(peer => peer.name).concat(['Everyone'])
+    peersPlusGroups: function() {
+      return this.peers.map(peer => peer.name).concat(this.groups.map(group => group.name)).concat(['Everyone'])
+    },
+    linkable: function() {
+      let values = { }
+      this.peersPlusGroups.forEach(name => values[name] = true)
+      return values
     },
     canSendMessage: function() {
       return this.peers.length > 0

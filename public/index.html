@@ -57,7 +57,7 @@
           </div>
 
           <div class="form-group col-12 col-md-auto px-md-3">
-            <button class="btn btn-primary" :disabled="connecting || ready || !roomId || !validUserId">
+            <button class="btn btn-primary" :disabled="connecting || ready || !roomId || invalidUserId">
               Connect
             </button>
           </div>
@@ -106,7 +106,7 @@
         </div>
 
         <div class="flex-grow-1 d-flex">
-          <div class="flex-fill overflow-auto" :class="[speakerFullScreen ? 'd-flex' : 'p-1', { 'minus-chat': showChat }]">
+          <div class="flex-fill overflow-auto" :class="speakerFullScreen ? 'd-flex' : 'p-1'">
             <div v-if="speakerFullScreen" class="flex-fill d-flex">
               <rtc-video class="flex-fill full-screen-peer" :peer="peers.length > 0 ? peers[fullScreenPeerIndex] : me"></rtc-video>
             </div>
@@ -131,7 +131,7 @@
             </rtc-video-template>
           </div>
           
-          <chat-menu class="chat-animate" :class="showChat ? 'chat-show' : 'chat-hide'" :peers="peers" inline-template>
+          <chat-menu class="chat-animate flex-shrink-0" :class="showChat ? 'chat-show' : 'chat-hide'" :peers="peers" :groups="groups" inline-template>
             <div @click.self="hide" class="chat-menu-bg py-sm-4">
               <div class="menu chat-menu-body mx-auto">
                 <div class="container-fluid d-flex flex-column h-100 p-0">
@@ -144,7 +144,17 @@
                   <div id="messages" class="flex-grow-1 overflow-auto px-3">
                     <div v-for="message in messages" class="py-2">
                       <div class="small d-flex align-items-center">
-                        From {{ message.from }} to {{ message.to }} <i v-if="message.command" class="ml-1 ri-command-fill"></i>
+                        <div>
+                          From
+                          <span @click="chatWith(message.from)" :class="linkable[message.from] ? 'chat-link' : ''">
+                            {{ message.from }}
+                          </span>
+                          to
+                          <span @click="chatWith(message.to)" :class="linkable[message.to] ? 'chat-link' : ''">
+                            {{ message.to }}
+                          </span>
+                        </div>
+                        <i v-if="message.command" class="ml-1 ri-command-fill"></i>
                       </div>
                       {{ message.text }}
                     </div>
@@ -163,11 +173,11 @@
                             </div>
                           </button>
                           <button type="button" :disabled="!canSendMessage" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
-                          <div class="dropdown-menu overflow-auto mh-screen">
-                            <!-- <button class="dropdown-item d-inline-flex align-items-center">
+                          <div class="dropdown-menu dropdown-menu-right overflow-auto mh-screen">
+                            <button @click="handleGroups" class="dropdown-item d-inline-flex align-items-center">
                               <i class="ri-group-fill mr-1"></i> Manage groups...
-                            </button> -->
-                            <button v-for="option in peersPlusEveryone" @click="sendTo = option" class="dropdown-item" :class="{ 'active': option === sendTo }" type="button">
+                            </button>
+                            <button v-for="option in peersPlusGroups" @click="sendTo = option" class="dropdown-item" :class="{ 'active': option === sendTo }" type="button">
                               {{ option }}
                             </button>
                           </div>
@@ -246,14 +256,20 @@
             <div class="modal-body">
               <join-modal-body v-if="modal.join" :room="roomId" :peers="modal.peers" inline-template>
                 <div>
-                  <div class="mb-3">You are about to join the room "{{ roomId }}"</div>
+                  <div class="mb-3">
+                    You are about to join the room "{{ roomId }}"
+                  </div>
                   <div class="form-check">
                     <input class="form-check-input" id="join-with-audio" type="checkbox" checked>
-                    <label class="form-check-label" for="join-with-audio">Join with audio</label>
+                    <label class="form-check-label" for="join-with-audio">
+                      Join with audio
+                    </label>
                   </div>
                   <div class="form-check">
                     <input class="form-check-input" id="join-with-video" type="checkbox" checked>
-                    <label class="form-check-label" for="join-with-video">Join with video</label>
+                    <label class="form-check-label" for="join-with-video">
+                      Join with video
+                    </label>
                   </div>
                   <button class="btn btn-outline-secondary my-3" data-toggle="collapse" data-target="#participants-collapse">Show Participants</button>
                   <div class="collapse" id="participants-collapse">
@@ -265,6 +281,59 @@
                   </div>
                 </div>
               </join-modal-body>
+              <groups-modal-body v-else-if="modal.groups" :groups="groups" :peers="peers" inline-template>
+                <div>
+                  <div id="groups-accordion" class="accordion">
+                    <div v-for="group in groups" :id="'group-' + group.safeId" class="card">
+                      <div class="card-header py-0 px-2">
+                        <h3 class="m-0">
+                          <button class="btn" data-toggle="collapse" :data-target="'#collapse-group-' + group.safeId">
+                            {{ group.name }}
+                          </button>
+                        </h3>
+                      </div>
+                      <div :id="'collapse-group-' + group.safeId" class="collapse" data-parent="#groups-accordion">
+                        <div class="card-body">
+                          <div class="d-flex align-items-end mb-4">
+                            <h5 class="mb-0 mr-4">
+                              Owner
+                            </h5>
+                            <div>
+                              {{ group.owner === true ? 'You' : group.owner }}
+                            </div>
+                          </div>
+                          
+                          <div v-if="group.owner === true" class="form-check mb-4">
+                            <input type="checkbox" v-model="group.shared" :id="'group-' + group.safeId + '-shared'" class="form-check-input">
+                            <label :for="'group-' + group.safeId + '-shared'" class="form-check-label">
+                              Shared with members
+                            </label>
+                          </div>
+                          <h5 class="mb-1">
+                            Group Members
+                          </h5>
+                          <div v-for="peer in group.members" class="form-check">
+                            <input type="checkbox" v-model="peer.isMember" :id="'group-' + group.safeId + '-member-' + peer.safeId + '-check'" class="form-check-input" :disabled="group.owner !== true">
+                            <label :for="'group-' + group.safeId + '-member-' + peer.safeId + '-check'" class="form-check-label">
+                              {{ peer.name }}
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <form @submit.prevent="createGroup" class="form-row" :class="{ 'mt-4': groups.length > 0 }">
+                    <div class="col">
+                      <input v-model="newGroupName" class="form-control" placeholder="Group Name">
+                    </div>
+                    <div class="col-auto">
+                      <button class="btn btn-success ml-auto" :disabled="invalidGroupName">
+                        Create group
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </groups-modal-body>
               <div v-else>
                 {{ modal.body }}
               </div>

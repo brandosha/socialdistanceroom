@@ -4,6 +4,8 @@ const database = firebase.database()
 const sha1 = KJUR.crypto.Util.sha1
 AudioContext = window.AudioContext || window.webkitAudioContext
 
+const forbiddenNames = ['you', 'everyone']
+
 function randomString(size) {
   let str = ''
   for (let i=0; i<size; i++) {
