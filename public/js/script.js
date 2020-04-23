@@ -68,6 +68,13 @@ function createPeer(peerName, incoming) {
     speaking: false,
     sharingScreen: false
   })
+  app.groups.forEach(group => {
+    group.members.push({
+      name: peerName,
+      isMember: false,
+      safeId: safeId
+    })
+  })
   
   return peer
 }
@@ -103,15 +110,16 @@ function setUpChannel(channel, peerName) {
       app.updatePeer(peerName, 'sharingScreen', data.sharingScreen)
     }
     
-    if (data.hasOwnProperty('from') && data.hasOwnProperty('to') && data.hasOwnProperty('text')) {
-      if (data.to === app.userId) data.to = 'You'
+    if (data.hasOwnProperty('message')) {
+      const message = data.message
+      if (message.to === app.userId) message.to = 'You'
       const commit = scrollMessages()
 
       const messageData = {
-        from: data.from,
-        to: data.to,
-        text: data.text,
-        command: data.command
+        from: message.from,
+        to: message.to,
+        text: message.text,
+        command: message.command
       }
 
       messages.push(messageData)
@@ -125,6 +133,40 @@ function setUpChannel(channel, peerName) {
         displayMessageTimeout = setTimeout(() => {
           $('.notification-container').fadeOut()
         }, 5000)
+      }
+    }
+
+    if (data.hasOwnProperty('group')) {
+      const group = data.group
+      if (!usedGroupNames.includes(group.name)) usedGroupNames.push(group.name)
+
+      let existingGroupIndex = -1
+      app.groups.some((existingGroup, index) => {
+        if (existingGroup.name === group.name) {
+          existingGroupIndex = index
+          return true
+        }
+      })
+
+      if (group.removed) {
+        if (existingGroupIndex > -1) app.groups.splice(existingGroupIndex)
+      } else {
+        const groupData = {
+          name: group.name,
+          safeId: encodeForId(group.name),
+          shared: true,
+          members: app.peers.map((peer) => {
+            return {
+              name: peer.name,
+              safeId: peer.safeId,
+              isMember: group.members[peer.name] === true || peer.name === group.owner
+            }
+          }),
+          owner: group.owner
+        }
+        
+        if (existingGroupIndex > -1) app.groups[existingGroupIndex] = groupData
+        else app.groups.push(groupData)
       }
     }
   }
@@ -142,6 +184,7 @@ var app = new Vue({
     ready: false,
     showChat: false,
     peers: [],
+    groups: [],
 
     modal: {
       title: '',
@@ -149,7 +192,9 @@ var app = new Vue({
       buttons: [],
 
       join: false,
-      peers: []
+      peers: [],
+
+      groups: false
     },
 
     newMessage: {
@@ -296,7 +341,12 @@ var app = new Vue({
             return true
           } 
         })
-        if (peerIndex >= 0) this.peers.splice(peerIndex, 1)
+        if (peerIndex >= 0) {
+          this.peers.splice(peerIndex, 1)
+          this.groups.forEach(group => {
+            group.members.splice(peerIndex, 1)
+          })
+        }
 
         this.setVideoSources()
       }
@@ -465,21 +515,32 @@ var app = new Vue({
         delete peerConnections[peer.name]
         this.peers.shift()
       })
+      this.groups.forEach(group => {
+        this.groups.shift()
+      })
       signaling.end()
     }
   },
   computed: {
-    validUserId: function () {
+    invalidUserId: function () {
       const userId = this.userId.trim().toLowerCase()
-      return userId.length > 0 && userId.length < 20
+      return userId.length < 2 || userId.length > 20 || forbiddenNames.includes(userId)
     },
     widthClasses: function() {
       const connected = this.peers.length
-      return {
-        "col-12": true,
-        "col-md-6": connected > 0,
-        "col-lg-4": connected > 1,
-        "col-xl-3": connected > 2
+
+      if (this.showChat) {
+        return {
+          "col-12": true,
+          "col-xl-6": connected > 0
+        }
+      } else {
+        return {
+          "col-12": true,
+          "col-md-6": connected > 0,
+          "col-lg-4": connected > 1,
+          "col-xl-3": connected > 2
+        }
       }
     },
     me: function() {

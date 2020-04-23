@@ -13,12 +13,14 @@ function scrollMessages() {
 }
 
 Vue.component('chat-menu', {
-  props: ['peers', 'myName'],
+  props: ['peers', 'groups'],
   data: function() {
     return {
       sendTo: 'Everyone',
       messages: messages,
-      message: ''
+      message: '',
+
+      linkClasses: 'btn-link cursor-pointer'
     }
   },
   methods: {
@@ -47,7 +49,8 @@ Vue.component('chat-menu', {
                 const split = options.split('d')
                 if (split.length !== 2) return message
                 
-                const dcount = parseInt(split[0])
+                let dcount = 1
+                if (split[0]) dcount = parseInt(split[0])
                 const dsides = parseInt(split[1])
                 if (isNaN(dcount) || isNaN(dsides)) return message
           
@@ -75,9 +78,7 @@ Vue.component('chat-menu', {
           message.length >= triggerLength && 
           message.slice(0, triggerLength) === '/' + command.trigger
         ) {
-          console.log(message, command.trigger)
           message = command.action(message.slice(triggerLength))
-          console.log(message)
           return true
         }
       })
@@ -89,14 +90,27 @@ Vue.component('chat-menu', {
         command: command
       }
       
+      let toGroup
       if (messageData.to === 'Everyone') {
         for (const peerName in peerConnections) {
           const channel = peerConnections[peerName].channel
-          channel.send(JSON.stringify(messageData))
+          channel.send(JSON.stringify({ message: messageData }))
         }
-      } else {
+      } else if (peerConnections[messageData.to]) {
         const channel = peerConnections[messageData.to].channel
-        channel.send(JSON.stringify(messageData))
+        channel.send(JSON.stringify({ message: messageData}))
+      } else if (this.groups.some(group => {
+        if (group.name === messageData.to) {
+          toGroup = group
+          return true
+        }
+      })) {
+        toGroup.members.forEach(peer => {
+          if (peer.isMember) {
+            const channel = peerConnections[peer.name].channel
+            channel.send(JSON.stringify({ message: messageData }))
+          }
+        })
       }
 
       messageData.from = 'You'
@@ -105,11 +119,38 @@ Vue.component('chat-menu', {
       const messagesEl = $('#messages')
       const scrollHeight = messagesEl.prop('scrollHeight')
       messagesEl.animate({ scrollTop: scrollHeight }, 500)
+    },
+    handleGroups: function() {
+      const modalEl = $('#modal')
+
+      app.modal.title = 'Groups'
+      app.modal.join = false
+      app.modal.groups = true
+      app.modal.buttons = [
+        {
+          text: 'Done',
+          type: 'primary',
+          onclick: function() {
+            groupModalDoneHandler()
+            modalEl.modal('hide')
+          }
+        }
+      ]
+
+      modalEl.modal('show')
+    },
+    chatWith: function(peerOrGroup) {
+      if (this.linkable[peerOrGroup]) this.sendTo = peerOrGroup
     }
   },
   computed: {
-    peersPlusEveryone: function() {
-      return this.peers.map(peer => peer.name).concat(['Everyone'])
+    peersPlusGroups: function() {
+      return this.peers.map(peer => peer.name).concat(this.groups.map(group => group.name)).concat(['Everyone'])
+    },
+    linkable: function() {
+      let values = { }
+      this.peersPlusGroups.forEach(name => values[name] = true)
+      return values
     },
     canSendMessage: function() {
       return this.peers.length > 0
@@ -122,37 +163,3 @@ Vue.component('chat-menu', {
     }
   }
 })
-
-
-function rollDice(options) {
-  options = options.trim()
-  let sides = 6
-  let count = 1
-
-  if (options.length > 0) {
-    const toNum = parseInt(options)
-    if (!isNaN(toNum) && toNum.toString() === options) {
-      sides = toNum
-    } else if (options.includes('d')) {
-      const split = options.split('d')
-      if (split.length !== 2) return message
-      
-      const dcount = parseInt(split[0])
-      const dsides = parseInt(split[1])
-      if (isNaN(dcount) || isNaN(dsides)) return message
-
-      count = dcount
-      sides = dsides
-    } else {
-      return message
-    }
-  }
-
-  const results = Array(count).fill(0).map(() => Math.ceil(Math.random() * sides))
-  
-  let total = ''
-  if (count === 1) count = 'a '
-  else total = ' for a total of ' + results.reduce((prev, curr) => prev + curr, 0)
-
-  return 'Rolled ' + count + 'd' + sides + ' and got ' + results.join(', ') + total
-}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html class="h-100">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
@@ -27,9 +27,9 @@
     <script src="js/includeAssets.js"></script>
   </head>
 
-  <body>
-    <div id="app" class="container-fluid p-3">
-      <form v-if="!ready" @submit.prevent="connect">
+  <body class="h-100">
+    <div id="app" class="container-fluid h-100 p-0">
+      <form v-if="!ready" @submit.prevent="connect" class="p-3">
         <div class="form-row">
           <div class="form-group col-12 col-md px-md-3">
             <div class="row align-items-center">
@@ -57,107 +57,173 @@
           </div>
 
           <div class="form-group col-12 col-md-auto px-md-3">
-            <button class="btn btn-primary" :disabled="connecting || ready || !roomId || !validUserId">
+            <button class="btn btn-primary" :disabled="connecting || ready || !roomId || invalidUserId">
               Connect
             </button>
           </div>
         </div>
       </form>
 
-      <div v-if="ready" class="menu fixed-top container-fluid">
-        <div class="d-flex justify-content-between" style="padding-top: 3px;">
-          <div>
-            <div class="dropdown" title="Info">
-              <button class="btn btn-sm pb-0" data-toggle="dropdown">
-                <i class="ri-information-line ri-lg"></i>
-              </button>
-              <div class="dropdown-menu" style="width: 200px;">
-                <div class="px-3">
-                  <div class="room-name text-capitalize h5 pb-1">
-                    {{ roomId }}
+      <div v-if="ready" class="d-flex flex-column h-100">
+        <div class="menu flex-shrink-0 container-fluid">
+          <div class="d-flex justify-content-between" style="padding-top: 3px;">
+            <div>
+              <div class="dropdown" title="Info">
+                <button class="btn btn-sm pb-0" data-toggle="dropdown">
+                  <i class="ri-information-line ri-lg"></i>
+                </button>
+                <div class="dropdown-menu" style="width: 200px;">
+                  <div class="px-3">
+                    <div class="room-name text-capitalize h5 pb-1">
+                      {{ roomId }}
+                    </div>
+                    <div class="participant-header">
+                      Participant Name
+                    </div>
+                    <div class="participant-name">
+                      {{ userId }}
+                    </div>
+                    <button @click="copyLink" class="btn btn-sm btn-primary mt-3 mb-1">
+                      Copy link
+                    </button>
+                    <textarea class="copy"></textarea>
                   </div>
-                  <div class="participant-header">
-                    Participant Name
-                  </div>
-                  <div class="participant-name">
-                    {{ userId }}
-                  </div>
-                  <button @click="copyLink" class="btn btn-sm btn-primary mt-3 mb-1">
-                    Copy link
-                  </button>
-                  <textarea class="copy"></textarea>
                 </div>
               </div>
             </div>
-          </div>
-          <div>
-            <button v-if="canShareScreen" @click="toggleScreenShare" class="btn btn-sm pb-0" :class="{ 'text-danger': sharingScreen }" title="Share screen">
-              <i class="ri-computer-line ri-lg"></i>
-            </button>
-          </div>
-          <div>
-            <button @click="toggleFullScreen" class="btn btn-sm pb-0">
-              <i v-if="speakerFullScreen" class="ri-fullscreen-exit-fill ri-lg"></i>
-              <i v-else class="ri-fullscreen-fill ri-lg"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="ready" class="menu fixed-bottom container-fluid">
-        <div class="d-flex align-items-center justify-content-between">
-          <div class="text-center">
-            <button @click="toggleMute" class="btn d-inline-flex flex-column align-items-center">
-              <i class="py-1 ri-xl" :class="muted ? 'ri-mic-off-fill' : 'ri-mic-fill'"></i>
-              <span class="small">
-                {{ muted ? 'Muted': 'Mute' }}
-              </span>
-            </button>
-          </div>
-          <div class="text-center">
-            <button @click="toggleHide" class="btn d-inline-flex flex-column align-items-center">
-              <i class="py-1 ri-xl" :class="hidden ? 'ri-eye-off-fill' : 'ri-eye-fill'"></i>
-              <span class="small">
-                {{ hidden ? 'Hidden' : 'Hide' }}
-              </span>
-            </button>
-          </div>
-          <div class="text-center">
-            <button @click="showChat = true" class="btn d-inline-flex flex-column align-items-center">
-              <i class="py-1 ri-xl ri-message-2-fill"></i>
-              <span class="small">
-                Chat
-              </span>
-            </button>
-          </div>
-          <div class="text-center">
-            <button @click="disconnect" class="btn btn-danger">
-              Leave
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div v-if="ready">
-        <rtc-video v-if="speakerFullScreen" class="full-screen-peer" :peer="peers.length > 0 ? peers[fullScreenPeerIndex] : me"></rtc-video>
-        <div v-else class="rtc-videos form-row justify-content-around">
-          <rtc-video :class="widthClasses" :peer="me"></rtc-video>
-          <rtc-video v-for="peer in peers" :class="widthClasses" :peer="peer"></rtc-video>
-        </div>
-        
-        <rtc-video-template>
-          <div class="py-1 rtc-video">
-            <div class="border-primary" :class="{ 'speaking': peer.speaking, 'hidden': peer.hidden }">
-              <div class="align-items-center" :class="peer.hidden ? 'd-flex align-items-center justify-content-center' : 'd-inline-flex rounded px-1'">
-                <span style="height: 1.5em;">{{ peer.name }}</span>
-                <i v-if="peer.muted" class="ri-mic-off-fill pl-1"></i>
-                <i v-if="peer.hidden" class="ri-eye-off-fill pl-1"></i>
-                <i v-if="peer.sharingScreen" class="ri-computer-line pl-1"></i>
-              </div>
-              <video :id="'video-' + id" class="mx-auto" :class="peer.hidden ? 'd-none' : 'd-block'" autoplay playsinline></video>
+            <div>
+              <button v-if="canShareScreen" @click="toggleScreenShare" class="btn btn-sm pb-0" :class="{ 'text-danger': sharingScreen }" title="Share screen">
+                <i class="ri-computer-line ri-lg"></i>
+              </button>
+            </div>
+            <div>
+              <button @click="toggleFullScreen" class="btn btn-sm pb-0">
+                <i v-if="speakerFullScreen" class="ri-fullscreen-exit-fill ri-lg"></i>
+                <i v-else class="ri-fullscreen-fill ri-lg"></i>
+              </button>
             </div>
           </div>
-        </rtc-video-template>
+        </div>
+
+        <div class="flex-grow-1 d-flex">
+          <div class="flex-fill overflow-auto" :class="speakerFullScreen ? 'd-flex' : 'p-1'">
+            <div v-if="speakerFullScreen" class="flex-fill d-flex">
+              <rtc-video class="flex-fill full-screen-peer" :peer="peers.length > 0 ? peers[fullScreenPeerIndex] : me"></rtc-video>
+            </div>
+            
+            <div v-else class="form-row justify-content-around m-0">
+              <rtc-video :class="widthClasses" :peer="me"></rtc-video>
+              <rtc-video v-for="peer in peers" :class="widthClasses" :peer="peer"></rtc-video>
+            </div>
+            
+            <rtc-video-template>
+              <div class="py-1 rtc-video">
+                <div class="border-primary" :class="{ 'speaking': peer.speaking, 'hidden': peer.hidden }">
+                  <div class="align-items-center" :class="peer.hidden ? 'd-flex align-items-center justify-content-center' : 'd-inline-flex rounded px-1'">
+                    <span style="height: 1.5em;">{{ peer.name }}</span>
+                    <i v-if="peer.muted" class="ri-mic-off-fill pl-1"></i>
+                    <i v-if="peer.hidden" class="ri-eye-off-fill pl-1"></i>
+                    <i v-if="peer.sharingScreen" class="ri-computer-line pl-1"></i>
+                  </div>
+                  <video :id="'video-' + id" class="mx-auto" :class="peer.hidden ? 'd-none' : 'd-block'" autoplay playsinline></video>
+                </div>
+              </div>
+            </rtc-video-template>
+          </div>
+          
+          <chat-menu class="chat-animate flex-shrink-0" :class="showChat ? 'chat-show' : 'chat-hide'" :peers="peers" :groups="groups" inline-template>
+            <div @click.self="hide" class="chat-menu-bg py-sm-4">
+              <div class="menu chat-menu-body mx-auto">
+                <div class="container-fluid d-flex flex-column h-100 p-0">
+                  <div class="flex-shrink-0 d-flex justify-content-between align-items-center border-secondary border-bottom py-2 px-3">
+                    <h3 class="modal-title">Chat</h3>
+                    <button @click="hide" class="close">
+                      &times;
+                    </button>
+                  </div>
+                  <div id="messages" class="flex-grow-1 overflow-auto px-3">
+                    <div v-for="message in messages" class="py-2">
+                      <div class="small d-flex align-items-center">
+                        <div>
+                          From
+                          <span @click="chatWith(message.from)" :class="linkable[message.from] ? 'chat-link' : ''">
+                            {{ message.from }}
+                          </span>
+                          to
+                          <span @click="chatWith(message.to)" :class="linkable[message.to] ? 'chat-link' : ''">
+                            {{ message.to }}
+                          </span>
+                        </div>
+                        <i v-if="message.command" class="ml-1 ri-command-fill"></i>
+                      </div>
+                      {{ message.text }}
+                    </div>
+                  </div>
+                  <div class="border-secondary border-top p-3">
+                    <form @submit.prevent="sendMessage" class="form-row">
+                      <div class="col">
+                        <input v-model="message" class="form-control" placeholder="Message">
+                      </div>
+                      <div class="col-auto">
+                        <div class="btn-group dropup">
+                          <button class="btn btn-primary d-inline-flex align-items-center" :disabled="!message || !canSendMessage">
+                            <i class="ri-chat-upload-fill mr-2"></i>
+                            <div class="text-truncate" style="max-width: 100px;">
+                              {{ sendTo }}
+                            </div>
+                          </button>
+                          <button type="button" :disabled="!canSendMessage" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
+                          <div class="dropdown-menu dropdown-menu-right overflow-auto mh-screen">
+                            <button @click="handleGroups" class="dropdown-item d-inline-flex align-items-center">
+                              <i class="ri-group-fill mr-1"></i> Manage groups...
+                            </button>
+                            <button v-for="option in peersPlusGroups" @click="sendTo = option" class="dropdown-item" :class="{ 'active': option === sendTo }" type="button">
+                              {{ option }}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </chat-menu>
+        </div>
+  
+        <div class="menu flex-shrink-0 container-fluid">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="text-center">
+              <button @click="toggleMute" class="btn d-inline-flex flex-column align-items-center">
+                <i class="py-1 ri-xl" :class="muted ? 'ri-mic-off-fill' : 'ri-mic-fill'"></i>
+                <span class="small">
+                  {{ muted ? 'Muted': 'Mute' }}
+                </span>
+              </button>
+            </div>
+            <div class="text-center">
+              <button @click="toggleHide" class="btn d-inline-flex flex-column align-items-center">
+                <i class="py-1 ri-xl" :class="hidden ? 'ri-eye-off-fill' : 'ri-eye-fill'"></i>
+                <span class="small">
+                  {{ hidden ? 'Hidden' : 'Hide' }}
+                </span>
+              </button>
+            </div>
+            <div class="text-center">
+              <button @click="showChat = !showChat" class="btn d-inline-flex flex-column align-items-center">
+                <i class="py-1 ri-xl ri-message-2-fill"></i>
+                <span class="small">
+                  Chat
+                </span>
+              </button>
+            </div>
+            <div class="text-center">
+              <button @click="disconnect" class="btn btn-danger">
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="notification-container px-4" style="display: none;">
@@ -179,55 +245,6 @@
         </div>
       </div>
 
-      <chat-menu class="chat-animate" :class="showChat ? 'chat-show' : 'chat-hide'" :peers="peers" inline-template>
-        <div @click.self="hide" class="chat-menu-bg py-sm-4">
-          <div class="menu chat-menu-body mx-auto">
-            <div class="container-fluid d-flex flex-column h-100 p-0">
-              <div class="flex-shrink-0 d-flex justify-content-between align-items-center border-secondary border-bottom py-2 px-3">
-                <h3 class="modal-title">Chat</h3>
-                <button @click="hide" class="close">
-                  &times;
-                </button>
-              </div>
-              <div id="messages" class="flex-grow-1 overflow-auto px-3">
-                <div v-for="message in messages" class="py-2">
-                  <div class="small d-flex align-items-center">
-                    From {{ message.from }} to {{ message.to }} <i v-if="message.command" class="ml-1 ri-command-fill"></i>
-                  </div>
-                  {{ message.text }}
-                </div>
-              </div>
-              <div class="border-secondary border-top p-3">
-                <form @submit.prevent="sendMessage" class="form-row">
-                  <div class="col">
-                    <input v-model="message" class="form-control" placeholder="Message">
-                  </div>
-                  <div class="col-auto">
-                    <div class="btn-group dropup">
-                      <button class="btn btn-primary d-inline-flex align-items-center" :disabled="!message || !canSendMessage">
-                        <i class="ri-chat-upload-fill mr-2"></i>
-                        <div class="text-truncate" style="max-width: 100px;">
-                          {{ sendTo }}
-                        </div>
-                      </button>
-                      <button type="button" :disabled="!canSendMessage" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
-                      <div class="dropdown-menu overflow-auto mh-screen">
-                        <!-- <button class="dropdown-item d-inline-flex align-items-center">
-                          <i class="ri-group-fill mr-1"></i> Manage groups...
-                        </button> -->
-                        <button v-for="option in peersPlusEveryone" @click="sendTo = option" class="dropdown-item" :class="{ 'active': option === sendTo }" type="button">
-                          {{ option }}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      </chat-menu>
-
       <div class="modal fade" id="modal" data-backdrop="static">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -239,14 +256,20 @@
             <div class="modal-body">
               <join-modal-body v-if="modal.join" :room="roomId" :peers="modal.peers" inline-template>
                 <div>
-                  <div class="mb-3">You are about to join the room "{{ roomId }}"</div>
+                  <div class="mb-3">
+                    You are about to join the room "{{ roomId }}"
+                  </div>
                   <div class="form-check">
                     <input class="form-check-input" id="join-with-audio" type="checkbox" checked>
-                    <label class="form-check-label" for="join-with-audio">Join with audio</label>
+                    <label class="form-check-label" for="join-with-audio">
+                      Join with audio
+                    </label>
                   </div>
                   <div class="form-check">
                     <input class="form-check-input" id="join-with-video" type="checkbox" checked>
-                    <label class="form-check-label" for="join-with-video">Join with video</label>
+                    <label class="form-check-label" for="join-with-video">
+                      Join with video
+                    </label>
                   </div>
                   <button class="btn btn-outline-secondary my-3" data-toggle="collapse" data-target="#participants-collapse">Show Participants</button>
                   <div class="collapse" id="participants-collapse">
@@ -258,6 +281,59 @@
                   </div>
                 </div>
               </join-modal-body>
+              <groups-modal-body v-else-if="modal.groups" :groups="groups" :peers="peers" inline-template>
+                <div>
+                  <div id="groups-accordion" class="accordion">
+                    <div v-for="group in groups" :id="'group-' + group.safeId" class="card">
+                      <div class="card-header py-0 px-2">
+                        <h3 class="m-0">
+                          <button class="btn" data-toggle="collapse" :data-target="'#collapse-group-' + group.safeId">
+                            {{ group.name }}
+                          </button>
+                        </h3>
+                      </div>
+                      <div :id="'collapse-group-' + group.safeId" class="collapse" data-parent="#groups-accordion">
+                        <div class="card-body">
+                          <div class="d-flex align-items-end mb-4">
+                            <h5 class="mb-0 mr-4">
+                              Owner
+                            </h5>
+                            <div>
+                              {{ group.owner === true ? 'You' : group.owner }}
+                            </div>
+                          </div>
+                          
+                          <div v-if="group.owner === true" class="form-check mb-4">
+                            <input type="checkbox" v-model="group.shared" :id="'group-' + group.safeId + '-shared'" class="form-check-input">
+                            <label :for="'group-' + group.safeId + '-shared'" class="form-check-label">
+                              Shared with members
+                            </label>
+                          </div>
+                          <h5 class="mb-1">
+                            Group Members
+                          </h5>
+                          <div v-for="peer in group.members" class="form-check">
+                            <input type="checkbox" v-model="peer.isMember" :id="'group-' + group.safeId + '-member-' + peer.safeId + '-check'" class="form-check-input" :disabled="group.owner !== true">
+                            <label :for="'group-' + group.safeId + '-member-' + peer.safeId + '-check'" class="form-check-label">
+                              {{ peer.name }}
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <form @submit.prevent="createGroup" class="form-row" :class="{ 'mt-4': groups.length > 0 }">
+                    <div class="col">
+                      <input v-model="newGroupName" class="form-control" placeholder="Group Name">
+                    </div>
+                    <div class="col-auto">
+                      <button class="btn btn-success ml-auto" :disabled="invalidGroupName">
+                        Create group
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </groups-modal-body>
               <div v-else>
                 {{ modal.body }}
               </div>
