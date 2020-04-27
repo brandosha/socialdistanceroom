@@ -8,7 +8,7 @@ class FirebaseSignaling {
     this.name = name
 
     this.roomId = sha1(room)
-    this.userId = btoa(encodeURIComponent(name))
+    this.userId = encodeSafeId(name)
 
     /** @typedef { 'nametaken' | 'notconnected' } ConnectionError */
     /** @type { (error: ConnectionError) => void } */
@@ -104,7 +104,7 @@ class FirebaseSignaling {
     const peersSnap = await this.roomRef.child('peers').once('value')
     if (peersSnap.exists()) {
       let peerIds = Object.keys(peersSnap.val())
-      const peerNames = peerIds.map(id => decodeURIComponent(atob(id)))
+      const peerNames = peerIds.map(id => decodeURIComponent(id))
       if (!this.onroomjoin || !(await this.onroomjoin(peerNames))) return
       this._joined = true
 
@@ -126,7 +126,7 @@ class FirebaseSignaling {
   }
 
   async makeSignalingConnection(peerId) {
-    const peerName = decodeURIComponent(atob(peerId))
+    const peerName = decodeSafeId(peerId)
 
     const rtc = new RTCPeerConnection(FirebaseSignaling.iceConfig)
     const channel = rtc.createDataChannel('signaling')
@@ -160,7 +160,7 @@ class FirebaseSignaling {
       const message = snap.val()
       if (!message.type || !message.data) return
 
-      const peerName = decodeURIComponent(atob(peerId))
+      const peerName = decodeSafeId(peerId)
 
       if (message.type === 'offer') {
         const rtc = new RTCPeerConnection(FirebaseSignaling.iceConfig)
@@ -197,7 +197,7 @@ class FirebaseSignaling {
 
   watchRoomPeers() {
     this.roomRef.child('peers').on('child_removed', snap => {
-      const peerName = decodeURIComponent(atob(snap.key))
+      const peerName = decodeSafeId(snap.key)
       if (this.onpeerdisconnnect) this.onpeerdisconnnect(peerName)
 
       this._peers[peerName].connection.close()
@@ -238,7 +238,7 @@ class FirebaseSignaling {
         await rtc.setLocalDescription(offer)
         await getAllIceCandidates(rtc)
 
-        const peerId = btoa(encodeURIComponent(peerName))
+        const peerId = encodeSafeId(peerName)
         this.sendData(peerId, {
           data: rtc.localDescription.sdp,
           type: 'offer'

@@ -23,8 +23,13 @@ function titleCase(text) {
   return capitalized.join(' ')
 }
 
-function encodeForId(text) {
-  return btoa(encodeURIComponent(text)).split('=', 2)[0]
+function encodeSafeId(text) {
+  const base64 = btoa(encodeURIComponent(text)).split('=', 2)[0]
+  return base64.split('/').join('_').split('+').join('-')
+}
+function decodeSafeId(text) {
+  const base64 = text.split('_').join('/').split('-').join('+')
+  return decodeURIComponent(atob(base64))
 }
 
 /** @param { RTCPeerConnection } connection */

@@ -1,7 +1,7 @@
 Vue.component('rtc-video', {
   props: ['peer'],
   computed: {
-    id: function() { return encodeForId(this.peer.name) }
+    id: function() { return encodeSafeId(this.peer.name) }
   },
   template: $('rtc-video-template').html()
 })

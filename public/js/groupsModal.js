@@ -16,7 +16,7 @@ Vue.component('groups-modal-body', {
 
       const groupData = {
         name: this.newGroupName,
-        safeId: encodeForId(this.newGroupName),
+        safeId: encodeSafeId(this.newGroupName),
         members: this.peers.map((peer) => {
           return {
             name: peer.name,

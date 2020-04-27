@@ -17,7 +17,7 @@ var peerConnections = { }
 var outgoingTracks = { }
 
 function createPeer(peerName, incoming) {
-  const safeId = encodeForId(peerName)
+  const safeId = encodeSafeId(peerName)
 
   const peer = new RTCPeerConnection({
     iceServers: [{ 'urls': ['stun:stun.l.google.com:19302'] }],
@@ -153,7 +153,7 @@ function setUpChannel(channel, peerName) {
       } else {
         const groupData = {
           name: group.name,
-          safeId: encodeForId(group.name),
+          safeId: encodeSafeId(group.name),
           shared: true,
           members: app.peers.map((peer) => {
             return {
@@ -382,7 +382,7 @@ var app = new Vue({
       this.roomId = randomString(2)
     },
     setVideoSources: function() {
-      const videoEl = $('#video-' + encodeForId(this.userId))[0]
+      const videoEl = $('#video-' + encodeSafeId(this.userId))[0]
       if (videoEl) {
         let stream = new MediaStream()
         stream.addTrack(outgoingTracks.video)
@@ -416,7 +416,7 @@ var app = new Vue({
     refreshOutgoingVideo: function() {
       let stream = new MediaStream()
       stream.addTrack(outgoingTracks.video)
-      $('#video-' + encodeForId(this.userId))[0].srcObject = stream
+      $('#video-' + encodeSafeId(this.userId))[0].srcObject = stream
 
       for (const peerName in peerConnections) {
         const peer = peerConnections[peerName]

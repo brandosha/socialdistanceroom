@@ -8,7 +8,7 @@ class FirestoreSignaling {
     this.name = name
 
     this.roomId = sha1(room.toLowerCase())
-    this.userId = btoa(encodeURIComponent(name))
+    this.userId = encodeSafeId(name)
 
     /** @typedef { 'nametaken' | 'notconnected' } ConnectionError */
     /** @type { (error: ConnectionError) => void } */
@@ -89,7 +89,7 @@ class FirestoreSignaling {
       query.forEach(async snap => {
         const data = snap.data()
         if (data.offer) {
-          const peerName = decodeURIComponent(atob(snap.id))
+          const peerName = decodeSafeId(snap.id)
           if (this._peers[peerName]) {
             snap.ref.set({
               name_taken: true
