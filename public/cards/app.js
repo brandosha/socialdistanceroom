@@ -10,7 +10,9 @@ const app = new Vue({
     roomId: '',
     connected: false,
     messages,
-    message: ''
+    message: '',
+    players: players,
+    sendTo: 'Everyone'
   },
   methods: {
     joinRoom: function() {
@@ -28,11 +30,13 @@ const app = new Vue({
       this.roomId = Math.random().toString(35).substr(3)
     },
     sendMessage: function() {
+      const sendTo = this.sendTo === 'Everyone' ? 'everyone' : [this.sendTo, this.name]
       send = () => {
         wsSend('message', {
           type: 'message',
-          text: this.message
-        })
+          text: this.message,
+          to: this.sendTo
+        }, sendTo)
       }
 
       const trimmed = this.message.trim()
@@ -81,6 +85,20 @@ const app = new Vue({
         this.message = ''
       }
     },
+    setGroup: function(group) {
+      if (this.peersPlusGroups.includes(group)) this.sendTo = group
+    },
+    groupClass: function(group) {
+      const validGroup = this.peersPlusGroups.includes(group)
+      return {
+        'font-weight-bold': true,
+        'text-primary': validGroup,
+        'cursor-pointer': validGroup
+      }
+    },
+    manageGroups: function() {
+      // TODO
+    },
     messageInputEnter: function(event) {
       if (event.shiftKey) return
 
@@ -93,11 +111,18 @@ const app = new Vue({
       return (
         this.name.trim().length < 2 ||
         this.roomId.trim().length < 2 ||
-        this.name.trim().toLowerCase() === 'me' ||
-        this.name.trim().toLowerCase() === 'you' ||
         this.name.includes(' ') ||
-        this.name.includes('.')
+        this.name.includes('.') ||
+        forbiddenNames.includes(this.name.trim().toLowerCase())
       )
+    },
+    messageIsCommand: function() {
+      return this.message.trim()[0] === '.'
+    },
+    peersPlusGroups() {
+      const players = this.players.slice()
+      players.splice(players.indexOf(this.name), 1)
+      return players.concat('Everyone')
     }
   },
   watch: {
@@ -156,10 +181,9 @@ function handleError(command, action, error) {
   }
 }
 
-function wsSend(type, payload) {
+function wsSend(type, payload, to='everyone') {
   ws.send(JSON.stringify({
-    type, payload,
-    to: 'everyone'
+    type, payload, to
   }))
 }
 
@@ -171,12 +195,20 @@ const messageHandlers = {
         name: data.peer,
         event: 'connected'
       })
+
+      if (game && !game.piles.hands.hasOwnProperty(data.peer.toLowerCase())) {
+        game.piles.hands[data.peer.toLowerCase()] = new Pile('hand', data.peer.toLowerCase())
+      }
     } else {
       players.splice(players.indexOf(data.peer), 1)
       addMessage('info', {
         name: data.peer,
         event: 'disconnected'
       })
+
+      if (game && game.piles.hands.hasOwnProperty(data.peer.toLowerCase())) {
+        delete game.piles.hands[data.peer.toLowerCase()]
+      }
     }
   },
   message: {
@@ -184,7 +216,8 @@ const messageHandlers = {
       if (from === app.name) from = 'You'
       addMessage('message', {
         from: from,
-        text: message.text
+        text: message.text,
+        to: message.to
       }, from === 'You')
     },
     action: (data, from) => {
@@ -206,11 +239,12 @@ const messageHandlers = {
   }
 }
 
-function setUpWebSocket(roomId, name) {
+function setUpWebSocket(room, name) {
   return new Promise((resolve, reject) => {
     const host = 'ws' + location.protocol.substr(4) + '//signaling.brandosha.repl.co/'
-    const userId = encodeName(name)
-    ws = new WebSocket(host + encodeURIComponent(roomId) + '/' + userId)
+    const roomId = b64UrlEncode(location.hostname + '_' + room)
+    const userId = b64UrlEncode(name)
+    ws = new WebSocket(host + roomId + '/' + userId)
 
     ws.onclose = (event) => {
       ws = null
@@ -219,6 +253,8 @@ function setUpWebSocket(roomId, name) {
       messages.forEach(_ => messages.pop())
       
       app.connected = false
+      app.message = ''
+      app.sendTo = 'Everyone'
 
       reject(event.code)
     }

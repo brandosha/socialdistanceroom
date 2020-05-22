@@ -1,3 +1,7 @@
 .action-bg {
   background-color: rgba(100, 100, 100, 0.2);
 }
+
+.cursor-pointer {
+  cursor: pointer;
+}

@@ -368,7 +368,7 @@ class CardGame {
       const pileName = this.parseOptions(['word'], options, from)
       if (this.piles.shared.hasOwnProperty(pileName))
         throw new OptionParseError('"' + pileName + '" already exists')
-      else if (['all', 'from', 'to', 'onto', 'by'].includes(pileName))
+      else if (forbiddenNames.includes(pileName))
         throw new OptionParseError('"' + pileName + '" is a reserved word')
       else if (players.map(player => player.toLowerCase()).includes(pileName))
         throw new OptionParseError('Piles cannot have the same name as a player')

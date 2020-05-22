@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="/css/dark.css">
+
+    <link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css">
   </head>
   <body class="h-100">
     <div id="app" class="container py-3 h-100">
@@ -46,12 +48,10 @@
         <div v-if="connected" id="messages" class="overflow-auto flex-grow-1 px-3">
           <div v-for="message in messages" class="px-md-4 pb-2">
             <div v-if="message.type === 'message'">
-              <div class="form-row">
-                <div class="col-auto text-muted">
-                  {{ message.data.from }}
-                </div>
-                <div class="col" style="white-space: pre-wrap;">{{ message.data.text }}</div>
+              <div class="mb-1">
+                <span @click="setGroup(message.data.from)" :class="groupClass(message.data.from)">{{ message.data.from }}</span> to <span @click="setGroup(message.data.to)" :class="groupClass(message.data.to)">{{ message.data.to === name ? 'You' : message.data.to }}</span>
               </div>
+              <div style="white-space: pre-wrap;">{{ message.data.text }}</div>
             </div>
             <div v-else-if="message.type === 'action'" class="rounded py-1 px-2 action-bg">
               <div v-if="message.data.command">
@@ -59,8 +59,8 @@
               </div>
               <div class="text-monospace mt-1" style="white-space: pre-wrap">{{ message.data.output }}</div>
             </div>
-            <div v-else-if="message.type === 'info'">
-              <strong>{{ message.data.name }}</strong> {{ message.data.event }}
+            <div v-else-if="message.type === 'info'" class="text-monospace">
+              <span class="font-weight-bold">{{ message.data.name }}</span> {{ message.data.event }}
             </div>
             <div v-else-if="message.type === 'error'" class="rounded py-1 px-2 action-bg">
               <div>
@@ -87,16 +87,30 @@
                     v-model="message"
                     @keydown.enter="messageInputEnter"
                     class="form-control" 
-                    :class="{ 'text-monospace': message.trim()[0] === '.' }"
+                    :class="{ 'text-monospace': messageIsCommand }"
                     placeholder="Message or command"
                     style="height: 2.4em; resize: none;"
                   ></textarea>
                 </div>
               </div>
               <div class="col-auto">
-                <button class="btn btn-primary">
-                  Send
-                </button>
+                <div class="btn-group dropup">
+                  <button class="btn btn-primary d-inline-flex align-items-center" :disabled="message.trim().length === 0">
+                    <i class="ri-chat-upload-fill mr-2"></i>
+                    <div class="text-truncate" style="max-width: 100px;">
+                      {{ messageIsCommand ? 'Execute' : sendTo }}
+                    </div>
+                  </button>
+                  <button type="button" :disabled="peersPlusGroups.length === 1" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
+                  <div class="dropdown-menu dropdown-menu-right overflow-auto mh-screen">
+                    <!-- <button @click.prevent="manageGroups" class="dropdown-item d-inline-flex align-items-center">
+                      <i class="ri-group-fill mr-1"></i> Manage groups...
+                    </button> -->
+                    <button v-for="option in peersPlusGroups" @click.prevent="sendTo = option" class="dropdown-item" :class="{ 'active': option === sendTo }" type="button">
+                      {{ option }}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

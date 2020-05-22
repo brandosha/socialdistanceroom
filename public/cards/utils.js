@@ -1,3 +1,5 @@
+const forbiddenNames = ['me', 'you', 'everybody', 'all', 'from', 'to', 'onto', 'by']
+
 Math.seededRandom = function(s) {
   var mask = 0xffffffff;
   var m_w  = (123456789 + s) & mask;
@@ -20,7 +22,7 @@ Array.range = function(lo, hi) {
   }
 }
 
-function encodeName(name) {
+function b64UrlEncode(name) {
   const uri = encodeURIComponent(name)
   return btoa(uri).split('+').join('-').split('/').join('_')
 }
