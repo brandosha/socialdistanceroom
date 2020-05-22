@@ -125,7 +125,7 @@
                     <i v-if="peer.hidden" class="ri-eye-off-fill pl-1"></i>
                     <i v-if="peer.sharingScreen" class="ri-computer-line pl-1"></i>
                   </div>
-                  <video :id="'video-' + id" class="mx-auto" :class="peer.hidden ? 'd-none' : 'd-block'" autoplay playsinline></video>
+                  <video v-show="!peer.hidden" :id="'video-' + id" class="mx-auto" autoplay playsinline></video>
                 </div>
               </div>
             </rtc-video-template>

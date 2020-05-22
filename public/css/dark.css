@@ -1,3 +1,6 @@
+/* https://gist.github.com/brandosha/b2848a060a691c98eeee54446202c8f3 */
+body { transition: background 0.25s; }
+
 body { transition: background 0.25s; }
 
 @media (prefers-color-scheme: dark) {
@@ -50,6 +53,10 @@ body { transition: background 0.25s; }
     }
 
     .card {
-      background-color: #111111;
+        background-color: #111111;
+        border-color: rgba(255, 255, 255, 0.3);
     }
+
+    .card-header { border-bottom: 1px solid rgba(255, 255, 255, 0.3); }
+    .card-footer { border-top: 1px solid rgba(255, 255, 255, 0.3); }
 }
