@@ -69,8 +69,12 @@ const app = new Vue({
               addMessage('action', {
                 command: this.message,
                 from: 'You',
-                output: output.text
+                output: output.text,
+                cards: output.cards,
+                shows: output.shows,
+                modifies: output.modifies
               }, true)
+              hideModifiedCards()
               if (output.share) wsSend('action', actionData)
             } catch (error) {
               handleError(this.message, action, error)
@@ -85,6 +89,7 @@ const app = new Vue({
         } else send()
 
         this.message = ''
+        this.historyIndex = -1
       }
     },
     setGroup: function(group) {
@@ -173,6 +178,37 @@ function addMessage(type, data, scroll) {
     type: type,
     data: data
   })
+}
+
+function hideModifiedCards() {
+  const newMessage = messages[messages.length - 1]
+  const messageData = newMessage.data
+  console.log(JSON.parse(JSON.stringify(newMessage)))
+
+  if (messageData.modifies) {
+    messageData.modifies.forEach(modified => {
+      let wrongCardsIndex = messages.slice().reverse().slice(1).findIndex(message => {
+        const shows = message.data.shows
+        if (shows) return shows.owner === modified.owner && shows.name === modified.name
+      })
+      console.log(wrongCardsIndex)
+      if (wrongCardsIndex !== -1) {
+        wrongCardsIndex = messages.length - 2 - wrongCardsIndex
+        console.log(wrongCardsIndex)
+        console.log(messages[wrongCardsIndex])
+        messages[wrongCardsIndex].data.hideCardIndices = true
+      }
+    })
+  }
+  
+  if (messageData.cards) {
+    messageData.cardsText = 'None'
+    if (messageData.cards.length > 0) {
+      messageData.cardsText = messageData.cards.map(data => {
+        return { index: data.index, text: game.deck.cardToText(data.card) }
+      })
+    }
+  }
 }
 
 function startGame(options, seed, from, command) {

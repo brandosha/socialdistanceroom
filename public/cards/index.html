@@ -58,6 +58,14 @@
                 <span class="mr-1">You</span> <code style="white-space: pre-wrap;">{{ message.data.command }}</code>
               </div>
               <div class="text-monospace mt-1" style="white-space: pre-wrap">{{ message.data.output }}</div>
+              <div v-if="message.data.cardsText" class="text-monospace">
+                <div v-if="message.data.cardsText === 'None'">
+                  None
+                </div>
+                <div v-else v-for="card in message.data.cardsText">
+                  <span v-if="!message.data.hideCardIndices"><code>{{ card.index }}</code>: </span>{{ card.text }}
+                </div>
+              </div>
             </div>
             <div v-else-if="message.type === 'info'" class="text-monospace">
               <span class="font-weight-bold">{{ message.data.name }}</span> {{ message.data.event }}
@@ -699,7 +707,7 @@
                         <h6>
                           Example
                         </h6>
-                        <code>.take discard top 2</code>
+                        <code>.take 2 from top discard</code>
                       </div>
                     </div>
                   </div>

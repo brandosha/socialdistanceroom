@@ -280,6 +280,7 @@ class CardGame {
 
       return {
         text: formatName(from) + ' added ' + this.deck.fullSet.length + ' cards to ' + formatPile(pile, from),
+        modifies: [pile],
         share: true
       }
     }
@@ -295,6 +296,9 @@ class CardGame {
       const cardsFormat = cards.length === 1 ? 'card' : 'cards'
       return {
         text: formatName(from) + ' chose ' + cards.length + ' ' + cardsFormat + ' from ' + formatPile(pile),
+        cards: cards.map((card, i) => { return { card, index: i + 1 } }),
+        shows: hand,
+        modifies: [pile, hand],
         share: true
       }
     }
@@ -334,6 +338,7 @@ class CardGame {
       const cardsFormat = amount === 1 ? 'card' : 'cards'
       return {
         text: formatName(from) + ' dealt out ' + amountText + ' ' + cardsFormat + ' from ' + formatPile(pile) + ' to ' + formatPlayers(dealTo),
+        modifies: [pile, this.piles.hands[from]],
         share: true,
         silent: dealTo.findIndex(player => player === app.name.toLowerCase()) === -1
       }
@@ -346,11 +351,12 @@ class CardGame {
       if (from === app.name.toLowerCase()) {
         let cardsText
         if (cards.length == 0) cardsText = 'Empty'
-        else cardsText = cards.map(cardData => cardData.index + ': ' + this.deck.cardToText(cardData.card)).join('\n')
+        else cardsText = cards.map(cardData => cardData.index + ': ' + this.deck.cardToText(cardData.card)).join("\n")
         return {
-          text: capitalize(formatPile(pile)) + ":\n" + cardsText,
-          share: pile.owner !== from,
-          silent: pile.owner !== 'shared' && pile.owner !== app.name.toLowerCase()
+          text: capitalize(formatPile(pile)) + ':',// + ":\n" + cardsText,
+          cards: cards,
+          shows: pile,
+          share: pile.owner !== from
         }
       } else {
         let cardsFormat = cards.length === 1 ? 'card' : 'cards'
@@ -405,6 +411,7 @@ class CardGame {
       let cardsFormat = cards.length === 1 ? 'card' : 'cards'
       return {
         text: formatName(from) + ' moved ' + cards.length + ' ' + cardsFormat + ' from ' + oldPlacement + ' ' + formatPile(fromPile) + ' ' + newPlacement + ' ' + formatPile(toPile),
+        modifies: [fromPile, toPile],
         share: true
       }
     }
@@ -438,7 +445,10 @@ class CardGame {
       const cardsFormat = cards.length === 1 ? 'card' : 'cards'
       const cardsText = cards.map((card, i) => indices[i] + ': ' + this.deck.cardToText(card)).join("\n")
       return {
-        text: formatName(from) + ' played ' + cards.length + ' ' + cardsFormat + ' ' + placement + ' ' + formatPile(pile) + ":\n" + cardsText,
+        text: formatName(from) + ' played ' + cards.length + ' ' + cardsFormat + ' ' + placement + ' ' + formatPile(pile),// + ":\n" + cardsText,
+        cards: cards.map((card, i) => { return { index: indices[i], card } }),
+        pile: hand,
+        modifies: [pile, hand],
         share: true
       }
     }
@@ -485,6 +495,7 @@ class CardGame {
 
       return {
         text: formatName(from) + ' removed ' + cards.length + ' cards from ' + formatPile(pile) + cardsText,
+        modifies: [pile],
         share: true
       }
     }
@@ -534,7 +545,9 @@ class CardGame {
       const cardsFormat = cards.length === 1 ? 'card' : 'cards'
       if (from === app.name.toLowerCase()) {
         return {
-          text: 'You showed ' + formatPlayers(players) + ' ' + cards.length + ' ' + cardsFormat + " from your hand:\n" + cards.map(card => this.deck.cardToText(card.card)).join("\n"),
+          text: 'You showed ' + formatPlayers(players) + ' ' + cards.length + ' ' + cardsFormat + " from your hand",//:\n" + cards.map(card => this.deck.cardToText(card.card)).join("\n"),
+          cards: cards,
+          shows: this.piles.hands[from],
           share: true
         }
       } else {
@@ -551,6 +564,7 @@ class CardGame {
 
       return {
         text: formatName(from) + ' shuffled ' + formatPile(pile),
+        modifies: [pile],
         share: true,
         silent: pile.owner !== 'shared' && pile.owner !== app.name.toLowerCase()
       }
@@ -565,6 +579,7 @@ class CardGame {
 
       return {
         text: formatName(from) + ' sorted ' + formatPile(pile) + ' by ' + sortBy,
+        modifies: [pile],
         share: true,
         silent: pile.owner !== 'shared' && pile.owner !== app.name.toLowerCase()
       }
@@ -585,7 +600,10 @@ class CardGame {
       if (from === app.name.toLowerCase())
         cardsText = ":\n" + cards.map((card, i) => (i + 1) + ': ' + this.deck.cardToText(card)).join("\n")
       return {
-        text: formatName(from) + ' took ' + amount + ' ' + cardsFormat + ' from the ' + position + ' of the ' + formatPile(pile) + cardsText,
+        text: formatName(from) + ' took ' + amount + ' ' + cardsFormat + ' from the ' + position + ' of the ' + formatPile(pile),// + cardsText,
+        cards: cards.map((card, i) => { return { card, index: i + 1 } }),
+        shows: hand,
+        modifies: [pile, hand],
         share: true
       }
     }
@@ -857,7 +875,7 @@ gamePresets.uno = {
     }
 
     addMessage('action', {
-      output: "Starting card:\n1: " + gamePresets.uno.deck.cardToText(game.piles.shared.discard.cards[0])
+      output: "Starting card:\n" + gamePresets.uno.deck.cardToText(game.piles.shared.discard.cards[0])
     })
   }
 }
@@ -889,7 +907,7 @@ gamePresets.scum = {
   },
   start: (game, seed) => {
     Array.range(1, Math.ceil(players.length / 5)).forEach(_ => {
-      game.piles.shared.draw.cards.push(...gamePresets.standard.deck.fullSet)
+      game.piles.shared.draw.cards.push(...gamePresets.scum.deck.fullSet)
     })
     
     game.actions.shuffle([], 'Preset', seed)
