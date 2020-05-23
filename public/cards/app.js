@@ -11,6 +11,8 @@ const app = new Vue({
     connected: false,
     messages,
     message: '',
+    pendingMessage: '',
+    historyIndex: -1,
     players: players,
     sendTo: 'Everyone'
   },
@@ -99,6 +101,24 @@ const app = new Vue({
     manageGroups: function() {
       // TODO
     },
+    navigateHistory: function(direction, event) {
+      const cursorPos = event.target.selectionStart
+      if (cursorPos !== event.target.selectionEnd) return
+      if (direction === 1 && cursorPos !== 0) return
+      if (direction === -1 && cursorPos !== this.message.length) return
+
+      const index = this.historyIndex + direction
+      if (index >= this.commandHistory.length) return
+      if (index < 0) {
+        this.message = this.pendingMessage
+        this.historyIndex = -1
+        return
+      }
+      
+      if (this.historyIndex === -1) this.pendingMessage = this.message
+      this.message = this.commandHistory[index]
+      this.historyIndex = index
+    },
     messageInputEnter: function(event) {
       if (event.shiftKey) return
 
@@ -115,6 +135,13 @@ const app = new Vue({
         this.name.includes('.') ||
         forbiddenNames.includes(this.name.trim().toLowerCase())
       )
+    },
+    commandHistory: function() {
+      const commands = []
+      this.messages.slice().reverse().slice(0, 10).forEach(message => {
+        if (message.data.command !== undefined) commands.push(message.data.command)
+      })
+      return commands
     },
     messageIsCommand: function() {
       return this.message.trim()[0] === '.'
@@ -154,15 +181,15 @@ function startGame(options, seed, from, command) {
   let preset = 'standard'
   if (options.length === 1) preset = options[0]
 
-  if (!gamePresets.hasOwnProperty(preset)) throw new Error('No such preset "' + preset + '"')
+  if (!gamePresets.hasOwnProperty(preset)) throw new OptionParseError('No such preset "' + preset + '"')
   
-  gamePresets[preset].verify()
+  if (gamePresets[preset].verify) gamePresets[preset].verify()
   addMessage('action', {
     command,
     from,
     output: from + ' started ' + gamePresets[preset].name
   })
-  
+
   game = new CardGame(preset, seed)
 }
 

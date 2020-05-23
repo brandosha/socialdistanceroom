@@ -86,6 +86,8 @@
                   <textarea 
                     v-model="message"
                     @keydown.enter="messageInputEnter"
+                    @keydown.up="navigateHistory(1, $event)"
+                    @keydown.down="navigateHistory(-1, $event)"
                     class="form-control" 
                     :class="{ 'text-monospace': messageIsCommand }"
                     placeholder="Message or command"
