@@ -156,12 +156,14 @@ function startGame(options, seed, from, command) {
 
   if (!gamePresets.hasOwnProperty(preset)) throw new Error('No such preset "' + preset + '"')
   
-  game = new CardGame(preset, seed)
+  gamePresets[preset].verify()
   addMessage('action', {
     command,
     from,
     output: from + ' started ' + gamePresets[preset].name
   })
+  
+  game = new CardGame(preset, seed)
 }
 
 function handleError(command, action, error) {

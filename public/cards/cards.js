@@ -590,16 +590,6 @@ class CardGame {
       }
     }
 
-    actions.tell = (options, from) => {
-      const [players, words] = this.parseOptions(['players', '"message"', 'word...'], options, from)
-
-      return {
-        text: formatName(from) + ' to ' + formatPlayers(players, from) + ":\n" + '"' + words.join(' ') + '"',
-        share: true,
-        silent: !players.includes(app.name.toLowerCase())
-      }
-    }
-
     this.actions = actions
   }
 
@@ -782,11 +772,15 @@ class Pile {
 }
 
 /**
+ * @callback VerifyConfig
+ * @throws
+ */
+/**
  * @callback GameConfig
  * @param { CardGame } game
  * @param { number } seed
  */
-/** @type { Object.<string, { name: string, deck: Deck, start: GameConfig }> } */
+/** @type { Object.<string, { name: string, deck: Deck, verify: VerifyConfig, start: GameConfig }> } */
 var gamePresets = { }
 gamePresets.standard = {
   name: 'a standard game',
@@ -844,9 +838,10 @@ gamePresets.uno = {
 
     return cards
   })()),
-  start: (game, seed) => {
+  verify: () => {
     if (players.length < 2) throw new OptionParseError('Can\'t play Uno with only 1 player')
-
+  },
+  start: (game, seed) => {
     Array.range(1, Math.ceil(players.length / 10)).forEach(_ => {
       game.piles.shared.draw.cards.push(...gamePresets.uno.deck.fullSet)
     })
@@ -861,11 +856,9 @@ gamePresets.uno = {
       game.actions.move(['top'], 'Preset')
     }
 
-    setTimeout(() => {
-      addMessage('action', {
-        output: "Starting card:\n1: " + gamePresets.uno.deck.cardToText(game.piles.shared.discard.cards[0])
-      })
-    }, 0)
+    addMessage('action', {
+      output: "Starting card:\n1: " + gamePresets.uno.deck.cardToText(game.piles.shared.discard.cards[0])
+    })
   }
 }
 
@@ -888,12 +881,13 @@ gamePresets.scum = {
     })
     return cards
   })()),
-  start: (game, seed) => {
+  verify: () => {
     if (players.length < 3) {
       const playerCount = players.length === 1 ? '1 player' : players.length + ' players'
       throw new OptionParseError('Can\'t play scum with only ' + playerCount)
     }
-
+  },
+  start: (game, seed) => {
     Array.range(1, Math.ceil(players.length / 5)).forEach(_ => {
       game.piles.shared.draw.cards.push(...gamePresets.standard.deck.fullSet)
     })
@@ -912,12 +906,13 @@ gamePresets.mafia = {
       name: ['Villager', 'Doctor', 'Detective', 'Mafia']
     }
   }, card => card.name, Array.range(0, 3).map(a => [a])),
-  start: (game, seed) => {
+  verify: () => {
     if (players.length < 7) {
       const playerCount = players.length === 1 ? '1 player' : players.length + ' players'
       throw new OptionParseError('Can\'t play mafia with only ' + playerCount)
     }
-
+  },
+  start: (game, seed) => {
     const mafiaCount = Math.floor(players.length / 2)
     const mafiaCards = Array(mafiaCount).fill().map(_ => [3])
     const specialCards = [[1], [2]]

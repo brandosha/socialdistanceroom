@@ -27,12 +27,6 @@ function b64UrlEncode(name) {
   return btoa(uri).split('+').join('-').split('/').join('_')
 }
 
-function deepKey(obj, key) {
-  const path = key.split('.')
-  let result = obj
-  path.forEach(keyName => result = result[keyName])
-  return result
-}
 function capitalize(str) {
   return str[0].toUpperCase() + str.substr(1)
 }

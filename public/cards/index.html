@@ -101,7 +101,7 @@
                       {{ messageIsCommand ? 'Execute' : sendTo }}
                     </div>
                   </button>
-                  <button type="button" :disabled="peersPlusGroups.length === 1" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
+                  <button type="button" :disabled="messageIsCommand || peersPlusGroups.length === 1" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                   <div class="dropdown-menu dropdown-menu-right overflow-auto mh-screen">
                     <!-- <button @click.prevent="manageGroups" class="dropdown-item d-inline-flex align-items-center">
                       <i class="ri-group-fill mr-1"></i> Manage groups...
@@ -698,35 +698,6 @@
                           Example
                         </h6>
                         <code>.take discard top 2</code>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="card">
-                    <div class="card-header p-1">
-                      <h5 class="mb-0">
-                        <button class="btn btn-a text-monospace" data-toggle="collapse" data-target="#collapse-tell">
-                          tell
-                        </button>
-                      </h5>
-                    </div>
-                    <div class="collapse" id="collapse-tell" data-parent="#accordion">
-                      <div class="card-body">
-                        <p>
-                          Secretly tells something to the specified players
-                        </p>
-
-                        <h6>
-                          Format
-                        </h6>
-                        <p>
-                          <code>.tell players "message" yourmessage</code>
-                        </p>
-
-                        <h6>
-                          Example
-                        </h6>
-                        <code>.tell sofia jim message this is secret</code>
                       </div>
                     </div>
                   </div>
