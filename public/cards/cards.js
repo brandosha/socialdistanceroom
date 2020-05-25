@@ -758,9 +758,10 @@ class Pile {
     } else {
       let indices
       cardsRef.amount = Math.min(cardsRef.amount, this.cards.length)
-      if (cardsRef.position === 'top') indices = Array.range(1, cardsRef.amount)
+      if (this.cards.length === 0) indices = []
+      else if (cardsRef.position === 'top') indices = Array.range(1, cardsRef.amount)
       else if (cardsRef.position === 'bottom') {
-        const startIndex = Math.max(this.cards.length - 1 - cardsRef.amount, 0)
+        const startIndex = this.cards.length - cardsRef.amount + 1
         indices = Array.range(startIndex, this.cards.length)
       } else {
         const rand = Math.seededRandom(seed)
