@@ -12,6 +12,7 @@ const app = new Vue({
     messages,
     message: '',
     pendingMessage: '',
+    commandHistory: [],
     historyIndex: -1,
     players: players,
     sendTo: 'Everyone'
@@ -86,6 +87,9 @@ const app = new Vue({
               text: 'There is no game in progress, use ".start" to start a game'
             }, true)
           }
+
+          this.commandHistory.unshift(this.message)
+          if (this.commandHistory.length > 20) this.commandHistory.pop()
         } else send()
 
         this.message = ''
@@ -141,13 +145,6 @@ const app = new Vue({
         forbiddenNames.includes(this.name.trim().toLowerCase())
       )
     },
-    commandHistory: function() {
-      const commands = []
-      this.messages.slice().reverse().slice(0, 10).forEach(message => {
-        if (message.data.command !== undefined) commands.push(message.data.command)
-      })
-      return commands
-    },
     messageIsCommand: function() {
       return this.message.trim()[0] === '.'
     },
@@ -187,17 +184,19 @@ function hideModifiedCards() {
 
   if (messageData.modifies) {
     messageData.modifies.forEach(modified => {
-      let wrongCardsIndex = messages.slice().reverse().slice(1).findIndex(message => {
+      messages.slice().reverse().slice(1).some((message, i) => {
         const shows = message.data.shows
-        if (shows) return shows.owner === modified.owner && shows.name === modified.name
+        if (!shows) return
+        if (
+          shows.name === modified.name &&
+          shows.owner === modified.owner
+        ) {
+          if (message.data.hideCardIndices) return true
+
+          const wrongCardsIndex = messages.length - 2 - i
+          messages[wrongCardsIndex].data.hideCardIndices = true
+        }
       })
-      console.log(wrongCardsIndex)
-      if (wrongCardsIndex !== -1) {
-        wrongCardsIndex = messages.length - 2 - wrongCardsIndex
-        console.log(wrongCardsIndex)
-        console.log(messages[wrongCardsIndex])
-        messages[wrongCardsIndex].data.hideCardIndices = true
-      }
     })
   }
   
@@ -253,6 +252,15 @@ function wsSend(type, payload, to='everyone') {
 }
 
 const messageHandlers = {
+  history: (message) => {
+    const data = JSON.parse(message)
+
+    if (messageHandlers.hasOwnProperty(data.type)) {
+      if (data.type === 'message' && messageHandlers.message.hasOwnProperty(data.payload.type)) {
+        messageHandlers.message[data.payload.type](data.payload, data.from, true)
+      } else messageHandlers[data.type](data.payload, true)
+    }
+  },
   peer: (data) => {
     if (data.connected) {
       players.push(data.peer)
@@ -277,16 +285,16 @@ const messageHandlers = {
     }
   },
   message: {
-    message: (message, from) => {
-      if (from === app.name) from = 'You'
+    message: (message, from, history) => {
+      if (from === app.name && !history) from = 'You'
       addMessage('message', {
         from: from,
         text: message.text,
         to: message.to
       }, from === 'You')
     },
-    action: (data, from) => {
-      if (from === app.name) return
+    action: (data, from, history) => {
+      if (from === app.name && !history) return
 
       if (data.action === 'start') {
         startGame(data.options, data.seed, from)
@@ -307,7 +315,7 @@ const messageHandlers = {
 function setUpWebSocket(room, name) {
   return new Promise((resolve, reject) => {
     const host = 'ws' + location.protocol.substr(4) + '//signaling.brandosha.repl.co/'
-    const roomId = b64UrlEncode(location.hostname + '_' + room)
+    const roomId = b64UrlEncode('CARDSv2_' + room)
     const userId = b64UrlEncode(name)
     ws = new WebSocket(host + roomId + '/' + userId)
 
