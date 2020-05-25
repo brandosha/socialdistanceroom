@@ -180,7 +180,6 @@ function addMessage(type, data, scroll) {
 function hideModifiedCards() {
   const newMessage = messages[messages.length - 1]
   const messageData = newMessage.data
-  console.log(JSON.parse(JSON.stringify(newMessage)))
 
   if (messageData.modifies) {
     messageData.modifies.forEach(modified => {
@@ -314,7 +313,7 @@ const messageHandlers = {
 
 function setUpWebSocket(room, name) {
   return new Promise((resolve, reject) => {
-    const host = 'ws' + location.protocol.substr(4) + '//signaling.brandosha.repl.co/'
+    const host = 'ws' + location.protocol.substr(4) + '//cardsv2.brandosha.repl.co/'
     const roomId = b64UrlEncode('CARDSv2_' + room)
     const userId = b64UrlEncode(name)
     ws = new WebSocket(host + roomId + '/' + userId)
