@@ -443,11 +443,10 @@ class CardGame {
       }
 
       const cardsFormat = cards.length === 1 ? 'card' : 'cards'
-      const cardsText = cards.map((card, i) => indices[i] + ': ' + this.deck.cardToText(card)).join("\n")
       return {
-        text: formatName(from) + ' played ' + cards.length + ' ' + cardsFormat + ' ' + placement + ' ' + formatPile(pile),// + ":\n" + cardsText,
+        text: formatName(from) + ' played ' + cards.length + ' ' + cardsFormat + ' ' + placement + ' ' + formatPile(pile),
         cards: cards.map((card, i) => { return { index: indices[i], card } }),
-        pile: hand,
+        shows: pile,
         modifies: [pile, hand],
         share: true
       }

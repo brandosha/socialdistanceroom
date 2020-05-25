@@ -301,8 +301,12 @@ const messageHandlers = {
         const output = game.action(data.action, data.options, data.seed, from)
         if (!output.silent) {
           addMessage('action', {
-            output: output.text
+            output: output.text,
+            cards: output.cards,
+            shows: output.shows,
+            modifies: output.modifies
           })
+          hideModifiedCards()
         }
       } else {
         console.error('Recieved unknown command', data)
