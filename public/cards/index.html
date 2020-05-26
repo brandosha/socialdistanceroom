@@ -121,7 +121,7 @@
               <div class="col-auto">
                 <div class="btn-group dropup">
                   <button class="btn btn-primary d-inline-flex align-items-center" :disabled="message.trim().length === 0">
-                    <i class="ri-chat-upload-fill mr-2"></i>
+                    <i class="ri-chat-upload-fill mr-2" :class="messageIsCommand ? 'ri-command-fill' : 'ri-chat-upload-fill'"></i>
                     <div class="text-truncate" style="max-width: 100px;">
                       {{ messageIsCommand ? 'Execute' : sendTo }}
                     </div>
