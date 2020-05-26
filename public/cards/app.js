@@ -2,6 +2,7 @@ var ws = null
 
 var game = null
 const players = []
+const groups = []
 const messages = []
 const app = new Vue({
   el: '#app',
@@ -15,6 +16,9 @@ const app = new Vue({
     commandHistory: [],
     historyIndex: -1,
     players: players,
+    groups: groups,
+    groupsUpdated: {},
+    newGroupName: '',
     sendTo: 'Everyone'
   },
   methods: {
@@ -33,10 +37,21 @@ const app = new Vue({
       this.roomId = Math.random().toString(35).substr(3)
     },
     sendMessage: function() {
-      const sendTo = this.sendTo === 'Everyone' ? 'everyone' : [this.sendTo, this.name]
+      let sendTo = []
+      let groupIndex
+      if (this.sendTo === 'Everyone') sendTo = 'everyone'
+      else if (groups.some((group, i) => {
+        if (group.name === this.sendTo) {
+          groupIndex = i
+          return true
+        }
+      })) {
+        sendTo = groups[groupIndex].members.slice()
+        if (!sendTo.includes(this.name)) sendTo.push(this.name)
+      } else sendTo = [this.sendTo, this.name]
+
       send = () => {
         wsSend('message', {
-          type: 'message',
           text: this.message,
           to: this.sendTo
         }, sendTo)
@@ -53,7 +68,6 @@ const app = new Vue({
           const seed = Math.floor(Math.random() * 0xffffffff)
 
           const actionData = {
-            type: 'action',
             action: action,
             options: options,
             seed: seed
@@ -107,8 +121,42 @@ const app = new Vue({
         'cursor-pointer': validGroup
       }
     },
-    manageGroups: function() {
-      // TODO
+    createGroup: function() {
+      const name = this.newGroupName.trim()
+      const safeId = b64UrlEncode(name).split('=')[0]
+      const groupIndex = this.groups.length
+      this.groupsUpdated[groupIndex] = true
+      this.groups.push({
+        name, safeId,
+        owner: true,
+        members: [],
+        shared: false
+      })
+      this.newGroupName = ''
+
+      this.$watch(() => this.groups[groupIndex], () => {
+        this.groupsUpdated[groupIndex] = true
+      }, { deep: true })
+
+      this.$nextTick(() => {
+        $('#' + safeId + '-member-select').selectpicker()
+        $('#collapse-group-' + safeId).collapse('show')
+      })
+    },
+    saveGroups: function() {
+      this.groups.forEach((group, i) => {
+        if (this.groupsUpdated[i] && group.owner === true) {
+          wsSend('group', {
+            group: {
+              name: group.name,
+              members: group.members,
+              shared: group.shared
+            }
+          })
+
+          this.groupsUpdated[i] = false
+        }
+      })
     },
     navigateHistory: function(direction, event) {
       const cursorPos = event.target.selectionStart
@@ -148,15 +196,42 @@ const app = new Vue({
     messageIsCommand: function() {
       return this.message.trim()[0] === '.'
     },
-    peersPlusGroups() {
+    invalidGroupName: function() {
+      const groupName = this.newGroupName.trim().toLowerCase()
+      return (
+        this.newGroupName.length < 1 ||
+        groupName === this.name.toLowerCase() ||
+        forbiddenNames.includes(groupName) ||
+        groups.some(group => group.name.toLowerCase() === groupName) ||
+        players.some(player => player.toLowerCase() === groupName)
+      )
+    },
+    myGroups: function() {
+      return this.groups.filter(group => {
+        return (
+          group.owner === true ||
+          (
+            group.shared &&
+            group.members.includes(this.name)
+          )
+        )
+      })
+    },
+    otherPlayers: function() {
       const players = this.players.slice()
       players.splice(players.indexOf(this.name), 1)
-      return players.concat('Everyone')
+      return players
+    },
+    peersPlusGroups: function() {
+      return this.myGroups.map(group => group.name).concat(this.otherPlayers).concat('Everyone')
     }
   },
   watch: {
     name: function() {
       localStorage.setItem('name', this.name)
+    },
+    players: function() {
+      this.$nextTick(() => $('.selectpicker').selectpicker('refresh'))
     }
   }
 })
@@ -209,6 +284,26 @@ function hideModifiedCards() {
   }
 }
 
+function deleteGroup(nameOrIndex) {
+  let name
+  if (typeof nameOrIndex === 'number') {
+    const i = nameOrIndex
+    name = groups[i].name
+    
+    groups.splice(i, 1)
+  } else {
+    name = nameOrIndex
+    
+    groups.some((group, i) => {
+      if (group.name === name) {
+        groups.splice(i, 1)
+        return true
+      }
+    })
+  }
+  if (app.sendTo === name) app.sendTo = 'Everyone'
+}
+
 function startGame(options, seed, from, command) {
   if (options.length > 1) throw new Error('Unexpected option "' + options[1] + '"')
   
@@ -245,8 +340,9 @@ function handleError(command, action, error) {
 }
 
 function wsSend(type, payload, to='everyone') {
+  payload.type = type
   ws.send(JSON.stringify({
-    type, payload, to
+    to, payload
   }))
 }
 
@@ -276,6 +372,10 @@ const messageHandlers = {
       addMessage('info', {
         name: data.peer,
         event: 'disconnected'
+      })
+
+      groups.forEach((group, i) => {
+        if (group.owner === data.peer) deleteGroup(i)
       })
 
       if (game && game.piles.hands.hasOwnProperty(data.peer.toLowerCase())) {
@@ -311,6 +411,29 @@ const messageHandlers = {
       } else {
         console.error('Recieved unknown command', data)
       }
+    },
+    group: (data, from, history) => {
+      if (from === app.name) return
+      const newGroup = data.group
+      newGroup.members.push(from)
+      newGroup.safeId = b64UrlEncode(newGroup.name).split('=')[0]
+      newGroup.owner = from
+
+      const groupExists = groups.some(group => {
+        if (group.name === newGroup.name) {
+          group.members = newGroup.members
+          group.shared = newGroup.shared
+          group.safeId = newGroup.safeId
+          return true
+        }
+      })
+      if (!groupExists) groups.push(newGroup)
+
+      app.$nextTick(() => {
+        const selectEl = $('#' + newGroup.safeId + '-member-select')
+        if (!groupExists) selectEl.selectpicker()
+        selectEl.selectpicker('val', newGroup.members)
+      })
     }
   }
 }
@@ -341,8 +464,8 @@ function setUpWebSocket(room, name) {
 
       // console.log(data)
       if (messageHandlers.hasOwnProperty(data.type)) {
-        if (data.type === 'message' && messageHandlers.message.hasOwnProperty(data.payload.type)) {
-          messageHandlers.message[data.payload.type](data.payload, data.from)
+        if (data.type === 'message') {
+          if (messageHandlers.message.hasOwnProperty(data.payload.type)) messageHandlers.message[data.payload.type](data.payload, data.from)
         } else messageHandlers[data.type](data.payload)
       }
     }
