@@ -294,9 +294,14 @@ class CardGame {
       hand.cards.unshift(...cards)
 
       const cardsFormat = cards.length === 1 ? 'card' : 'cards'
+
+      let showingCards
+      if (from === app.name.toLowerCase())
+        showingCards = cards.map((card, i) => { return { card, index: i + 1 } })
+
       return {
         text: formatName(from) + ' chose ' + cards.length + ' ' + cardsFormat + ' from ' + formatPile(pile),
-        cards: cards.map((card, i) => { return { card, index: i + 1 } }),
+        cards: showingCards,
         shows: hand,
         modifies: [pile, hand],
         share: true
@@ -353,7 +358,7 @@ class CardGame {
         if (cards.length == 0) cardsText = 'Empty'
         else cardsText = cards.map(cardData => cardData.index + ': ' + this.deck.cardToText(cardData.card)).join("\n")
         return {
-          text: capitalize(formatPile(pile)) + ':',// + ":\n" + cardsText,
+          text: capitalize(formatPile(pile)) + ':',
           cards: cards,
           shows: pile,
           share: pile.owner !== from
@@ -544,7 +549,7 @@ class CardGame {
       const cardsFormat = cards.length === 1 ? 'card' : 'cards'
       if (from === app.name.toLowerCase()) {
         return {
-          text: 'You showed ' + formatPlayers(players) + ' ' + cards.length + ' ' + cardsFormat + " from your hand",//:\n" + cards.map(card => this.deck.cardToText(card.card)).join("\n"),
+          text: 'You showed ' + formatPlayers(players) + ' ' + cards.length + ' ' + cardsFormat + " from your hand",
           cards: cards,
           shows: this.piles.hands[from],
           share: true
@@ -595,13 +600,15 @@ class CardGame {
       hand.cards.unshift(...cards)
 
       const cardsFormat = amount === 1 ? 'card' : 'cards'
-      let cardsText = ''
+      
+      let showingCards
       if (from === app.name.toLowerCase())
-        cardsText = ":\n" + cards.map((card, i) => (i + 1) + ': ' + this.deck.cardToText(card)).join("\n")
+        showingCards = cards.map((card, i) => { return { card, index: i + 1 } })
+      
       return {
-        text: formatName(from) + ' took ' + amount + ' ' + cardsFormat + ' from the ' + position + ' of the ' + formatPile(pile),// + cardsText,
-        cards: cards.map((card, i) => { return { card, index: i + 1 } }),
-        shows: hand,
+        text: formatName(from) + ' took ' + amount + ' ' + cardsFormat + ' from the ' + position + ' of the ' + formatPile(pile),
+        cards: showingCards,
+        shows: cards ? hand : undefined,
         modifies: [pile, hand],
         share: true
       }
